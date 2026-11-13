@@ -465,3 +465,44 @@ layers, where it is strongest, had no causal effect in the probe (KL 0.003).
 Note `analyze_timing.py` now uses the start of the Final Answer block as the
 stop event (`</think>` has no usable controls). Full table:
 `timing_summary__main.txt`.
+
+## Growing the leaks, thinking ON: the first edit that SHORTENS reasoning in a working model
+
+**`q3_grow@0.25` (every Q3 firing x1.25) shortens reasoning by ~20% with no
+accuracy change; the Q4 match does much less (2026-11-13, seed 1, n=200).**
+This was predicted in advance from the probe (growing Q3 raises the urge to
+conclude).
+
+| | intact | q3_grow@0.25 | q4_grow@0.25 |
+|---|---|---|---|
+| accuracy | 0.840 | 0.835 (8 lost, 7 gained) | 0.820 (12 lost, 8 gained) |
+| median thinking tokens | 1,365 | 962 | 1,226 |
+| length ratio vs intact | 1 | 0.80 [0.76, 0.86] | 0.93 [0.83, 0.99] |
+| cap hits | 11% | 8.5% | 11% |
+| "wait"s per trace | 7.5 | 7.0 | 6.1 |
+| WikiText loss / MMLU | 0 / 0.503 | +0.2% / 0.517 | -0.1% / 0.513 |
+| direct-answer rate (thinking off) | 60% | 50% | 67% |
+
+Q3 edit vs Q4 edit on the same problems: length ratio 0.84 [0.80, 0.93].
+
+Reading:
+- Q3 size now moves real reasoning length in BOTH directions in a working
+  model: 25% removed -> x1.38, 25% larger -> x0.80. Q4: x1.16 and x0.93. The
+  Q3-vs-Q4 contrast is in the predicted direction both times (Q3 removal
+  lengthens more; Q3 growth shortens more).
+- The mild Q4 shortening fits the probe too: growing Q4 lowers the urge to
+  conclude but also lowers "Wait"; the two roughly cancel.
+- North-star question, second half: reasoning got 20% shorter and accuracy
+  did not move (0.835 vs 0.840). So in this model a moderate cut in reasoning
+  length does not by itself cost accuracy. (GSM8K is easy for this model; much
+  of the intact model's extra length is re-checking. A harder task could differ.)
+- The edit is tiny by general measures (WikiText +0.2%, MMLU unchanged), so
+  this is not damage.
+- The thinking-off proxy moves the opposite way again (Q3 larger -> answers
+  directly LESS often, 50% vs 60%), as it did for removal. So Q3 seems to do
+  two different things: it raises the tendency to start working a problem
+  out, and, once reasoning, raises the tendency to wrap up. Worth one direct
+  test later; for now just noted.
+- One seed; seed 0 and a x1.5 dose are queued.
+A trace read at random (idx 80) looks like normal, tidy reasoning that checks
+once and stops; not truncated or degenerate.
