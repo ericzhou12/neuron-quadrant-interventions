@@ -1,4 +1,4 @@
-# neuron-sparsity
+# neuron-quadrant-interventions
 
 Experiments building on Goodfire's [Neurons as an Interpretable Basis](https://www.goodfire.com/research/neurons-as-an-interpretable-basis),
 run on small dense models that fit on a laptop. Goodfire studied one
@@ -30,7 +30,7 @@ Goodfire's full ablation is still running, so treat nothing here as final.
 ## Setup
 
 ```bash
-cd neuron-sparsity
+cd neuron-quadrant-interventions
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
