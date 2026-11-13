@@ -1,0 +1,46 @@
+85 traces. Values: mean within-trace z-score at the token BEFORE the event, minus the same at
+matched control positions (same preceding token, different next token). Bootstrap 95% CI over traces.
+
+== before 'wait'
+      q3_share_early: +0.104 [+0.047, +0.164]  (83 traces, 305 events)  *
+       q3_mass_early: -0.011 [-0.054, +0.037]  (83 traces, 305 events)
+      q4_share_early: +0.131 [+0.064, +0.195]  (83 traces, 305 events)  *
+       q4_mass_early: +0.008 [-0.039, +0.052]  (83 traces, 305 events)
+        q3_share_mid: +0.193 [+0.097, +0.290]  (83 traces, 305 events)  *
+         q3_mass_mid: +0.298 [+0.205, +0.385]  (83 traces, 305 events)  *
+        q4_share_mid: +0.166 [+0.074, +0.260]  (83 traces, 305 events)  *
+         q4_mass_mid: -0.255 [-0.335, -0.167]  (83 traces, 305 events)  *
+       q3_share_late: -0.298 [-0.361, -0.237]  (83 traces, 305 events)  *
+        q3_mass_late: +0.456 [+0.337, +0.577]  (83 traces, 305 events)  *
+       q4_share_late: -0.312 [-0.383, -0.243]  (83 traces, 305 events)  *
+        q4_mass_late: -0.495 [-0.604, -0.383]  (83 traces, 305 events)  *
+
+== before 'end'
+      q3_share_early: too few events (2 traces)
+       q3_mass_early: too few events (2 traces)
+      q4_share_early: too few events (2 traces)
+       q4_mass_early: too few events (2 traces)
+        q3_share_mid: too few events (2 traces)
+         q3_mass_mid: too few events (2 traces)
+        q4_share_mid: too few events (2 traces)
+         q4_mass_mid: too few events (2 traces)
+       q3_share_late: too few events (2 traces)
+        q3_mass_late: too few events (2 traces)
+       q4_share_late: too few events (2 traces)
+        q4_mass_late: too few events (2 traces)
+
+== before 'final'
+      q3_share_early: -0.305 [-0.369, -0.240]  (77 traces, 77 events)  *
+       q3_mass_early: +0.148 [+0.101, +0.195]  (77 traces, 77 events)  *
+      q4_share_early: +0.053 [-0.016, +0.118]  (77 traces, 77 events)
+       q4_mass_early: -0.169 [-0.219, -0.118]  (77 traces, 77 events)  *
+        q3_share_mid: +0.993 [+0.897, +1.094]  (77 traces, 77 events)  *
+         q3_mass_mid: +0.747 [+0.660, +0.832]  (77 traces, 77 events)  *
+        q4_share_mid: +0.684 [+0.594, +0.773]  (77 traces, 77 events)  *
+         q4_mass_mid: -0.590 [-0.669, -0.508]  (77 traces, 77 events)  *
+       q3_share_late: -0.980 [-1.054, -0.909]  (77 traces, 77 events)  *
+        q3_mass_late: +1.242 [+1.144, +1.341]  (77 traces, 77 events)  *
+       q4_share_late: -0.769 [-0.846, -0.695]  (77 traces, 77 events)  *
+        q4_mass_late: -1.267 [-1.370, -1.164]  (77 traces, 77 events)  *
+
+* = interval excludes 0. Many series are tested, so treat lone stars with caution.

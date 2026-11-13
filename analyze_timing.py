@@ -37,6 +37,9 @@ def zscore(xs):
     return [(x - m) / s for x in xs]
 
 
+FINAL = -1  # sentinel token id for the start of the Final Answer block
+
+
 def boot_ci(xs, n=2000, seed=0):
     rng = random.Random(seed)
     b = sorted(statistics.mean(rng.choices(xs, k=len(xs))) for _ in range(n))
@@ -50,7 +53,11 @@ def main(path, model="Qwen/Qwen3-1.7B"):
     recs = [json.loads(l) for l in open(path)]
     series = [k for k in recs[0] if k.startswith(("q3_", "q4_"))]
 
-    events = {"wait": lambda t: t in wait_ids, "end": lambda t: t == think_end}
+    final_marker = tok("**Final Answer**", add_special_tokens=False)["input_ids"][:3]
+    events = {"wait": lambda t: t in wait_ids, "end": lambda t: t == think_end,
+              # The real stopping decision: starting the "**Final Answer**" block (see FINDINGS.md).
+              # Matched controls are other positions after the same token (usually a paragraph break).
+              "final": lambda t: t == FINAL}
     print(f"{len(recs)} traces. Values: mean within-trace z-score at the token BEFORE the event, minus the same at")
     print("matched control positions (same preceding token, different next token). Bootstrap 95% CI over traces.\n")
     for ev, is_ev in events.items():
@@ -58,7 +65,13 @@ def main(path, model="Qwen/Qwen3-1.7B"):
         for key in series:
             diffs, n_ev = [], 0
             for r in recs:
-                toks, z = r["tokens"], zscore(r[key])
+                toks, z = list(r["tokens"]), zscore(r[key])
+                if ev == "final":  # mark the first token of the marker with a sentinel id
+                    m = len(final_marker)
+                    for j in range(len(toks) - m, -1, -1):
+                        if toks[j : j + m] == final_marker:
+                            toks[j] = FINAL
+                            break
                 ev_pos = [t for t in range(1, len(toks)) if is_ev(toks[t])]
                 if not ev_pos:
                     continue

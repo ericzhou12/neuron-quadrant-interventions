@@ -437,3 +437,31 @@ for each full-quadrant edit). Detail visible in fig6: in the zero-fill rows
 the problems with ~0 thinking tokens are not short answers; 19 of Q3's 22 and
 all 13 of Q4's 13 then loop in the ANSWER up to the cap. So full zeroing is
 "loop somewhere" for both quadrants, and only Q3 mean-fill actually stops.
+
+**Timing: leak activity before "Wait" and before the Final Answer block
+(2026-11-13, intact model, 85 seed-1 traces; correlational).** Per-token Q3 /
+Q4 share of neurons and summed activation ("mass"; Q4 mass is negative, so
+more negative = larger), z-scored within each trace, at the token before the
+event, minus positions in the same trace with the same preceding token but an
+ordinary next token.
+
+| | before "Wait" (305 events) | before "**Final Answer**" (77 events) |
+|---|---|---|
+| Q3 mass, middle layers | +0.30 [+0.21, +0.39] | +0.75 [+0.66, +0.83] |
+| Q4 mass, middle layers | -0.26 [-0.34, -0.17] | -0.59 [-0.67, -0.51] |
+| Q3 mass, late layers | +0.46 [+0.34, +0.58] | +1.24 [+1.14, +1.34] |
+| Q4 mass, late layers | -0.50 [-0.60, -0.38] | -1.27 [-1.37, -1.16] |
+| Q3 / Q4 share, late layers | -0.30 / -0.31 | -0.98 / -0.77 |
+
+Reading: before BOTH kinds of decision point the leaks get larger in the
+middle and late layers (fewer neurons leaking in late layers, but more total
+leak), and Q3 and Q4 move together, mirror images of each other. H2 predicted
+something Q3-specific and directional (Q3 activity falling before the model
+stops, rising before "Wait"). That is not what happens: Q3 rises before both,
+and Q4 does the same with the opposite sign. So timing gives no support to a
+Q3-specific "keep going" signal; it looks like a general signature of "a
+decision is being made here". It is also only a correlation, and the late
+layers, where it is strongest, had no causal effect in the probe (KL 0.003).
+Note `analyze_timing.py` now uses the start of the Final Answer block as the
+stop event (`</think>` has no usable controls). Full table:
+`timing_summary__main.txt`.
