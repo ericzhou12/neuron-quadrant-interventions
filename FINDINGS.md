@@ -538,3 +538,22 @@ which can occasionally be a coincidence, e.g. a number from the question);
 traces that hit the cap or never state their answer are excluded (12-20% per
 condition), so runaway reasoning is not described here.
 `python analyze_phases.py <folder>`; output `phases_summary__seed1.json/.txt`.
+
+**A mild dose of the Goodfire-style fill does not shorten reasoning
+(2026-11-13, `q3_mean@0.1`, seed 1, n=200; Q4 control not yet run).**
+Replacing a random 10% of Q3 firings with the neuron's all-token mean:
+accuracy 0.820 vs 0.840 (14 lost, 10 gained), median thinking 1,214 vs 1,365,
+median per-problem length ratio 0.99 [0.91, 1.00], cap hits 10% vs 11%,
+"wait"s 6.4 vs 7.5. General damage: WikiText +1.1%, MMLU 0.487.
+So at a dose that leaves the model working, the fill barely moves reasoning
+length; the collapse to zero tokens only appears at the full dose, where the
+model is broken. The probe over-predicted here: it showed a large rise in the
+urge to conclude EARLY (+1.4 to +1.6) but no change at the true end, and
+generation sided with the latter. Lesson: of the two probe measures, "at true
+end" tracked real length better than "conclude early" for this edit.
+`q4_mean@0.1` is queued, not run, so nothing here is a Q3-vs-Q4 statement.
+
+**Paused (2026-11-13, at the owner's request).** No experiments are running.
+Queued, in order: `q4_mean@0.1` seed 1; seed-0 replication of the
+`zero@0.25` pair (`q3_zero@0.25__seed0.jsonl.partial` holds 100 problems and
+resumes); `grow@0.5` pair seed 1; `grow@0.25` pair seed 0.
