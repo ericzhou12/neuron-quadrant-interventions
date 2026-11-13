@@ -324,7 +324,12 @@ def fig3_generation(folder: Path, out_dir: Path):
     base = variants.get("none")
     if not base:
         return skip(name, "no thinking-on baseline (none__seed<k>.jsonl)")
-    conds = sorted([v for v in variants if v != "none" and variants[v]], key=condition_sort_key)
+    # Edits that fail the damage gate (broken model) are shown in fig6, not here.
+    dmg_path = folder / "damage.json"
+    dmg = json.loads(dmg_path.read_text()) if dmg_path.exists() else {}
+    broken = {c for c, d in dmg.items() if d.get("passes_gate") is False}
+    conds = sorted([v for v in variants if v != "none" and variants[v]
+                    and v.split("__")[0] not in broken], key=condition_sort_key)
     if not conds:
         return skip(name, "baseline exists but no thinking-on condition runs yet")
 
