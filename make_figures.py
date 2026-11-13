@@ -1,7 +1,7 @@
 """Publication-style figures for the Q3 reasoning project.
 
     python make_figures.py [results/q3__Qwen__Qwen3-1.7B]
-    python make_figures.py --selftest      # synthetic data for figs 3 and 4
+    python make_figures.py --selftest      # synthetic data for figs 3-6
 
 Writes PNGs (dpi 160) into <results>/figures/. Any figure whose input data does
 not exist yet is skipped with a printed note.
@@ -10,6 +10,8 @@ not exist yet is skipped with a printed note.
   fig2_putback_ladder.png WikiText loss for each put-back edit, Q3 vs Q4 (damage.json)
   fig3_generation.png     GSM8K thinking length, accuracy, cap hits (thinking-on runs)
   fig4_probe.png          teacher-forced stop / wait urge vs damage (probe_stop*.jsonl)
+  fig5_probe_conclude.png gain dial: conclude / wait urge vs leak size x0.5-x1.5 (probe_summary__v3seed0/v2.json)
+  fig6_full_ablation.png  per-problem thinking length when a whole quadrant is mean-filled or zeroed (seed 1)
 
 Colours: Q3 edits blue, Q4 edits (the matched control) orange, intact model grey.
 """
@@ -544,6 +546,205 @@ def fig4_probe(folder: Path, out_dir: Path):
     save(fig, out_dir, name)
 
 
+# ----------------------------------------------------------------------------- fig 5
+
+GAIN_STEPS = [("shrink@0.5", 0.5), ("shrink@0.25", 0.75), ("grow@0.25", 1.25), ("grow@0.5", 1.5)]
+RATIO_TICKS = [0.2, 0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4, 5]
+
+
+def _ratio_axis(ax):
+    """Y axis holds natural-log ratios; label the ticks as plain 'x times' multipliers."""
+    lo, hi = ax.get_ylim()
+    ticks = [t for t in RATIO_TICKS if lo <= math.log(t) <= hi]
+    ax.yaxis.set_major_locator(matplotlib.ticker.FixedLocator([math.log(t) for t in ticks]))
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"×{math.exp(v):.3g}"))
+
+
+def fig5_probe_conclude(folder: Path, out_dir: Path):
+    name = "fig5_probe_conclude.png"
+    main_p, rep_p = folder / "probe_summary__v3seed0.json", folder / "probe_summary__v2.json"
+    if not main_p.exists():
+        return skip(name, f"no {main_p.name}")
+    main = json.loads(main_p.read_text())["per_condition"]
+    rep = json.loads(rep_p.read_text())["per_condition"] if rep_p.exists() else {}
+    if not any(f"q3_{s}" in main for s, _ in GAIN_STEPS):
+        return skip(name, "no q3_shrink/grow entries in the probe summary")
+    n_main = sorted({main[f"{q}_{s}"]["n"] for q in ("q3", "q4") for s, _ in GAIN_STEPS if f"{q}_{s}" in main})
+    n_rep = sorted({rep[f"{q}_{s}"]["n"] for q in ("q3", "q4") for s, _ in GAIN_STEPS if f"{q}_{s}" in rep})
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.3), sharex=True)
+    fig.subplots_adjust(left=0.075, right=0.955, top=0.76, bottom=0.2, wspace=0.26)
+    add_header(fig, "Turning the leak size up or down: Q3 and Q4 pull the urge to conclude in opposite directions",
+               f"Qwen3-1.7B reading the intact model's own reasoning traces (teacher-forced, n = {n_main[0]} traces, "
+               "paired by trace). Each quadrant's firings are all multiplied by x. Points = geometric-mean ratio vs "
+               "intact;\nerror bars = 95% bootstrap CI over traces. Hollow points = the x0.75 / x1.25 edits on a "
+               f"separate set of {n_rep[0] if n_rep else '?'} traces (seed 1), as a replication.")
+    panels = [("conclude", "a  Urge to conclude early",
+               "Summed P(start the final answer) before the real\nend, ratio to intact (log scale)"),
+              ("wait", "b  Urge to say \"Wait\"", "Summed P(\"Wait\") over the trace,\nratio to intact (log scale)")]
+    off = {"q3": -0.012, "q4": 0.012}
+    for ax, (metric, title, ylabel) in zip(axes, panels):
+        ax.set_title(title)
+        ax.axhline(0, color=INTACT_COL, lw=1.1, ls="--", zorder=1)
+        ax.axvline(1.0, color=GRID, lw=0.8, zorder=0)
+        ends = []
+        for q, col in (("q3", Q3_COL), ("q4", Q4_COL)):
+            xs, ys, los, his = [1.0], [0.0], [0.0], [0.0]
+            for s, x in GAIN_STEPS:
+                r = main.get(f"{q}_{s}")
+                if r is None:
+                    continue
+                xs.append(x)
+                ys.append(r[metric]["mean"])
+                los.append(r[metric]["ci"][0])
+                his.append(r[metric]["ci"][1])
+            o = np.argsort(xs)
+            xs, ys, los, his = (np.array(v)[o] for v in (xs, ys, los, his))
+            ax.plot(xs + off[q], ys, color=col, lw=2, zorder=3)
+            ax.errorbar(xs + off[q], ys, yerr=[ys - los, his - ys], fmt="o", color=col, ms=7, mec="white", mew=1.2,
+                        elinewidth=1.6, capsize=0, zorder=4)
+            ends.append((xs[-1] + off[q], ys[-1], q.upper(), col))
+            for s, x in GAIN_STEPS:
+                r = rep.get(f"{q}_{s}")
+                if r is None:
+                    continue
+                m, (lo, hi) = r[metric]["mean"], r[metric]["ci"]
+                xx = x + 3 * off[q]
+                ax.plot([xx, xx], [lo, hi], color=col, lw=1.0, alpha=0.6, zorder=2)
+                ax.plot(xx, m, "o", mfc="white", mec=col, mew=1.6, ms=6.5, zorder=5)
+        lo, hi = ax.get_ylim()
+        gap = 0.07 * (hi - lo)
+        ends.sort(key=lambda e: e[1])
+        if len(ends) == 2 and ends[1][1] - ends[0][1] < gap:
+            mid = (ends[0][1] + ends[1][1]) / 2
+            ends = [(*ends[0][:1], mid - gap / 2, *ends[0][2:]), (*ends[1][:1], mid + gap / 2, *ends[1][2:])]
+        for x, y, lab, col in ends:
+            ax.annotate(lab, (x, y), xytext=(9, 0), textcoords="offset points", va="center", fontsize=9.5,
+                        fontweight="bold", color=col)
+        ax.set_xlim(0.4, 1.62)
+        ax.set_xticks([0.5, 0.75, 1.0, 1.25, 1.5])
+        ax.set_xticklabels(["×0.5", "×0.75", "×1\nintact", "×1.25", "×1.5"])
+        ax.set_xlabel("Size of that quadrant's leaks (multiplier on every firing)")
+        ax.set_ylabel(ylabel)
+        _ratio_axis(ax)
+        ax.text(0.41, 0, "intact", fontsize=7.8, color=INTACT_COL, va="bottom")
+    from matplotlib.lines import Line2D
+    handles = [Line2D([], [], color=Q3_COL, lw=2, marker="o", ms=7, mec="white", label="Q3 leaks scaled"),
+               Line2D([], [], color=Q4_COL, lw=2, marker="o", ms=7, mec="white", label="Q4 leaks scaled (matched control)"),
+               Line2D([], [], ls="", marker="o", ms=6.5, mfc="white", mec=INK2, mew=1.6,
+                      label="independent traces (seed 1)"),
+               Line2D([], [], color=INTACT_COL, ls="--", lw=1.1, label="intact model")]
+    fig.legend(handles=handles, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 0.0))
+    save(fig, out_dir, name)
+
+
+# ----------------------------------------------------------------------------- fig 6
+
+FIG6_ROWS = [("none", "none__seed1.jsonl", "Intact model"),
+             ("q3_mean", "q3_mean__seed1.jsonl", "Q3 set to neuron mean\n(Goodfire-style fill)"),
+             ("q4_mean", "q4_mean__seed1.jsonl", "Q4 set to neuron mean"),
+             ("q3_zero", "q3_zero__seed1.jsonl", "Q3 removed (zero)"),
+             ("q4_zero", "q4_zero__first25__seed1.jsonl", "Q4 removed (zero)")]
+CAP = 4096
+NEAR_ZERO = 5  # 1-5 thinking tokens is "\n\n</think>"-style skipping; pile it with exact zeros
+
+
+def _pile(k: int, x0: float, direction: int, y0: float, dx: float, dy: float, per_col: int):
+    """Grid positions for k identical values, stacked in columns growing away from x0."""
+    xs, ys = [], []
+    for i in range(k):
+        c, r = divmod(i, per_col)
+        n_in_col = min(per_col, k - c * per_col)
+        xs.append(x0 + direction * c * dx)
+        ys.append(y0 + (r - (n_in_col - 1) / 2) * dy)
+    return xs, ys
+
+
+def fig6_full_ablation(folder: Path, out_dir: Path):
+    name = "fig6_full_ablation.png"
+    data = []
+    for cond, fn, label in FIG6_ROWS:
+        p = folder / fn
+        if not p.exists():
+            print(f"  fig6: missing {fn}, row left out")
+            continue
+        recs = [json.loads(l) for l in p.open() if l.strip()]
+        recs = [r for r in recs if r.get("thinking_mode", "on") == "on" and r["idx"] < 50]
+        if recs:
+            data.append((cond, label, recs))
+    if not any(c == "none" for c, _, _ in data) or len(data) < 2:
+        return skip(name, "need none__seed1.jsonl plus at least one full-ablation run")
+    dmg = load_damage(folder) or {}
+
+    fig, ax = plt.subplots(figsize=(12, 1.15 * len(data) + 2.4))
+    fig.subplots_adjust(left=0.22, right=0.985, top=1 - 1.25 / fig.get_figheight(),
+                        bottom=0.65 / fig.get_figheight())
+    add_header(fig, "Editing a whole quadrant breaks the model: it skips thinking or loops to the cap, and solves nothing",
+               "Qwen3-1.7B, GSM8K, thinking on, seed 1, first 50 problems (Q4 zero: first 25). One dot per problem; "
+               "filled = correct, hollow = wrong. Piles at ~0 (0-5 tokens) and at the\n4096-token cap are "
+               "stacked so every problem is visible; bold number = pile size. Damage = WikiText loss increase vs intact (single evaluation). No error bars: every "
+               "problem is shown.", top=0.985)
+    rng = np.random.default_rng(0)
+    y = np.arange(len(data))[::-1]
+    dx, dy, per_col = 52, 0.075, 9
+    labels = []
+    for yi, (cond, label, recs) in zip(y, data):
+        col = quad_colour(cond)
+        t = np.array([r["thinking_tokens"] for r in recs])
+        ok = np.array([bool(r["correct"]) for r in recs])
+        zero, cap = t <= NEAR_ZERO, t >= CAP
+        mid = ~zero & ~cap
+        pts = []  # (x, y, correct)
+        for mask, x0, d in ((zero, -30, -1), (cap, CAP + 30, 1)):
+            idx = np.flatnonzero(mask)
+            xs, ys = _pile(len(idx), x0, d, yi, dx, dy, per_col)
+            pts += list(zip(xs, ys, ok[idx]))
+        for i in np.flatnonzero(mid):
+            pts.append((t[i], yi + rng.uniform(-0.3, 0.3), ok[i]))
+        for x, yy, c in pts:
+            ax.plot(x, yy, "o", ms=5.2, mec=col, mew=1.1, mfc=col if c else "white", zorder=3)
+        for mask, x, ha in ((zero, -30 - dx * math.ceil(zero.sum() / per_col) + dx / 2 - 20, "right"),
+                            (cap, CAP + 30 + dx * math.ceil(cap.sum() / per_col) - dx / 2 + 20, "left")):
+            if mask.sum():
+                ax.text(x, yi, f"{mask.sum()}", ha=ha, va="center", fontsize=8.5, color=INK, fontweight="bold")
+        if cond == "none":
+            med = float(np.median(t))
+            ax.plot([med, med], [yi - 0.38, yi + 0.38], color=INK2, lw=1.4, zorder=4)
+            ax.text(med, yi + 0.4, f"median {med:.0f}", ha="center", va="bottom", fontsize=7.5, color=INK2)
+        d = dmg.get(cond, {}).get("loss_increase_pct")
+        dtxt = "damage —" if cond == "none" else (f"damage +{d:.0f}%" if d is not None else "damage n/a")
+        labels.append(f"{label}\nn = {len(recs)}, accuracy {ok.mean():.0%}, {dtxt}")
+        tot = np.array([r.get("total_tokens", -1) for r in recs])
+        empty = int((tot == 0).sum())
+        looped = int((zero & (tot >= CAP)).sum())
+        note = []
+        if empty:
+            note.append(f"{empty} of {len(recs)} emitted nothing at all (stopped at once)")
+        if looped:
+            of = "all" if looped == zero.sum() else f"{looped} of the"
+            note.append(f"{of} {int(zero.sum())} that skipped thinking then looped in the answer up to the cap")
+        if note:
+            ax.text(200, yi, "\n".join(note), fontsize=7.8, color=INK2, va="center")
+    ax.axvline(CAP, color=INK2, lw=0.9, ls=":", zorder=1)
+    ax.text(CAP, len(data) - 0.42, "4096-token cap\n(never closed </think>)", ha="center", va="bottom",
+            fontsize=7.8, color=INK2)
+    ax.axvline(0, color=INK2, lw=0.9, ls=":", zorder=1)
+    ax.text(0, len(data) - 0.42, "~0 thinking\ntokens", ha="center", va="bottom", fontsize=7.8, color=INK2)
+    ax.set_xlim(-560, CAP + 560)
+    ax.set_ylim(-0.6, len(data) - 0.05)
+    ax.set_xticks([0, 1000, 2000, 3000, 4096])
+    ax.set_xlabel("Thinking tokens per problem")
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=8.5)
+    for lab in ax.get_yticklabels():
+        lab.set_color(INK)
+    ax.grid(axis="y", visible=False)
+    ax.tick_params(axis="y", length=0)
+    for yi in y[:-1]:
+        ax.axhline(yi - 0.5, color=GRID, lw=0.7)
+    save(fig, out_dir, name)
+
+
 # ----------------------------------------------------------------------------- self-test
 
 def _write_synthetic(folder: Path):
@@ -584,6 +785,20 @@ def _write_synthetic(folder: Path):
                                         "logp_stop_end": -0.5 + math.log(mult) + rng.gauss(0, 0.3),
                                         "wait_hazard": bw * (2 - mult / 2) * math.exp(rng.gauss(0, 0.2)),
                                         "nll": 0.4 + kl, "kl": kl * math.exp(rng.gauss(0, 0.2))}) + "\n")
+    # Fig 5 summary (gain dial) and fig 6 full-ablation runs (seed 1).
+    def entry(m):
+        return {"mean": m, "ci": [m - 0.3, m + 0.3], "n": 40}
+    summ = {f"{q}_{s}": {"kl": 0.1, "n": 40, "conclude": entry(sg * (x - 1) * 2), "wait": entry(-(x - 1))}
+            for q, sg in (("q3", 1), ("q4", -1)) for s, x in GAIN_STEPS}
+    (folder / "probe_summary__v3seed0.json").write_text(json.dumps({"per_condition": summ}))
+    for c, fn in (("none", "none__seed1.jsonl"), ("q3_mean", "q3_mean__seed1.jsonl"), ("q3_zero", "q3_zero__seed1.jsonl")):
+        with (folder / fn).open("w") as f:
+            for i in range(60):
+                t = int(math.exp(rng.gauss(7, 0.5))) if c == "none" else rng.choice([0, 4096])
+                t = min(t, 4096)
+                f.write(json.dumps({"condition": c, "seed": 1, "idx": i, "thinking_mode": "on", "correct": c == "none",
+                                    "thinking_tokens": t, "answer_tokens": 0, "total_tokens": t,
+                                    "finished_thinking": t < 4096}) + "\n")
 
 
 def selftest():
@@ -591,9 +806,10 @@ def selftest():
     print(f"selftest: synthetic data in {tmp}")
     _write_synthetic(tmp)
     out = tmp / "figures"
-    for f in (fig1_damage_dose, fig2_putback_ladder, fig3_generation, fig4_probe):
+    for f in (fig1_damage_dose, fig2_putback_ladder, fig3_generation, fig4_probe, fig5_probe_conclude,
+              fig6_full_ablation):
         f(tmp, out)
-    for n in ("fig3_generation.png", "fig4_probe.png"):
+    for n in ("fig3_generation.png", "fig4_probe.png", "fig5_probe_conclude.png", "fig6_full_ablation.png"):
         assert (out / n).exists(), f"{n} was not produced"
     print("selftest ok (figs 1 and 2 are expected to skip: no damage.json in the synthetic folder)")
     return out
@@ -602,7 +818,7 @@ def selftest():
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("folder", nargs="?", default=DEFAULT_FOLDER)
-    p.add_argument("--selftest", action="store_true", help="render figs 3 and 4 from synthetic data in a temp dir")
+    p.add_argument("--selftest", action="store_true", help="render figs 3-6 from synthetic data in a temp dir")
     args = p.parse_args(argv)
     if args.selftest:
         selftest()
@@ -612,7 +828,8 @@ def main(argv=None):
         sys.exit(f"no such folder: {folder}")
     out = folder / "figures"
     print(f"figures from {folder} -> {out}")
-    for f in (fig1_damage_dose, fig2_putback_ladder, fig3_generation, fig4_probe):
+    for f in (fig1_damage_dose, fig2_putback_ladder, fig3_generation, fig4_probe, fig5_probe_conclude,
+              fig6_full_ablation):
         f(folder, out)
 
 

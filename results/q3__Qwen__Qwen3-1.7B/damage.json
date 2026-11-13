@@ -13,9 +13,14 @@
     "loss_clean": 3.31628615435432,
     "loss_intervened": 4.888933787626379,
     "loss_increase_pct": 47.421952149911895,
-    "mmlu_accuracy": 0.23666666666666666,
-    "mmlu_letter_mass": 0.16275897607790135,
-    "mmlu_n": 300
+    "mmlu_accuracy": 0.27,
+    "mmlu_letter_mass": 0.9960785802205404,
+    "mmlu_n": 300,
+    "mmlu_direct_rate": 0.4633333333333333,
+    "mmlu_direct_accuracy": 0.12333333333333334,
+    "mmlu_prompt_version": 4,
+    "passes_gate": false,
+    "gate_reason": "WikiText loss +47.4% > 10.0%; MMLU drop 0.233 > 0.05"
   },
   "q3_mean": {
     "kl": 3.67999719357958,
@@ -51,9 +56,14 @@
     "loss_clean": 3.31628615435432,
     "loss_intervened": 5.288832062365962,
     "loss_increase_pct": 59.48057001720639,
-    "mmlu_accuracy": 0.23666666666666666,
-    "mmlu_letter_mass": 0.2954306704221484,
-    "mmlu_n": 300
+    "mmlu_accuracy": 0.26666666666666666,
+    "mmlu_letter_mass": 0.8022111806770166,
+    "mmlu_n": 300,
+    "mmlu_direct_rate": 0.4766666666666667,
+    "mmlu_direct_accuracy": 0.13,
+    "mmlu_prompt_version": 4,
+    "passes_gate": false,
+    "gate_reason": "WikiText loss +59.5% > 10.0%; MMLU drop 0.237 > 0.05"
   },
   "random_matched": {
     "kl": 10.303620820886948,
@@ -408,5 +418,19 @@
     "mmlu_prompt_version": 4,
     "passes_gate": true,
     "gate_reason": "ok"
+  },
+  "q4_mean": {
+    "kl": 1.7750826517740885,
+    "loss_clean": 3.31628615435432,
+    "loss_intervened": 4.701065661860447,
+    "loss_increase_pct": 41.7569366168205,
+    "mmlu_accuracy": 0.2633333333333333,
+    "mmlu_letter_mass": 0.4282010906521668,
+    "mmlu_direct_rate": 0.12,
+    "mmlu_direct_accuracy": 0.04,
+    "mmlu_n": 300,
+    "mmlu_prompt_version": 4,
+    "passes_gate": false,
+    "gate_reason": "WikiText loss +41.8% > 10.0%; MMLU drop 0.240 > 0.05"
   }
 }

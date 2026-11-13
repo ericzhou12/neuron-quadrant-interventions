@@ -366,3 +366,74 @@ mean fill is not a clean Q3-vs-Q4 contrast.
 Still a probe result: whether generated reasoning actually gets shorter under
 `q3_grow` is not yet tested (that run was stopped before saving anything).
 Files: `probe_stop__v3seed0.jsonl`, `probe_summary__v3seed0.json/.txt`.
+
+## Full ablation, thinking ON (direct replication of Goodfire's test; gate overridden)
+
+Seed 1, first 50 GSM8K problems, intact accuracy on these 0.80, intact median
+thinking 1,361 tokens. All of these edits break the model on ordinary text, so
+read every row next to its damage.
+
+**Goodfire-style mean fill (2026-11-13).**
+
+| | WikiText loss | MMLU | median thinking tokens | what the output looks like | accuracy |
+|---|---|---|---|---|---|
+| `q3_mean` (all Q3 firings -> neuron's all-token mean) | +91% | 0.24 (chance) | 0 | stops at once: 39 of 50 emit end-of-turn as the very first token, the rest 1-8 tokens of newlines / `</think>` | 0.00 |
+| `q4_mean` (same for Q4) | +42% | 0.26 (chance) | 4,096 (cap) | starts the problem, then loops ("So 16 is 16. So 16 is 16. ...") until the cap; 48 of 50 never close thinking | 0.00 |
+
+Reading:
+- Yes, Goodfire-style full Q3 ablation "cuts reasoning" here too, all the way
+  to zero tokens. But the model is not reasoning briefly and answering: it
+  emits nothing and gets 0% right. In this model the effect is a broken model
+  that stops immediately, not shorter reasoning.
+- The Q4 control is equally broken (chance MMLU) but fails in the OPPOSITE
+  direction: it cannot stop. So "damage" alone (H0) does not predict the
+  direction; which quadrant gets the fill does. Q3-fill = stop, Q4-fill =
+  never stop. That matches the probe: pushing the Q3 side up (grow, mean fill)
+  raises the urge to conclude, pushing the Q4 side up lowers it.
+- This means a length drop after mean-ablating Q3 cannot by itself be read as
+  "Q3 firings drive reasoning". Here the same drop comes from an edit that
+  adds a strong stop push and destroys the model. Whether Goodfire's MoE
+  model was still working after their ablation is exactly the missing piece
+  (they report no accuracy for that test).
+- Not comparable in one respect: Goodfire's 176 tokens is short but non-zero,
+  ours is zero. Their model evidently tolerates the edit better.
+Files: `q3_mean__seed1.jsonl`, `q4_mean__seed1.jsonl` (50 problems each).
+Full `q3_zero` / `q4_zero` with thinking on are running.
+
+**Full zeroing, thinking on (2026-11-13, seed 1; `q3_zero` 50 problems,
+`q4_zero` stopped after its first 25 because every row ran to the cap and a
+batch took 48 minutes).**
+
+| | WikiText loss | thinking tokens | what the output looks like | accuracy |
+|---|---|---|---|---|
+| `q3_zero` | +47% | 22 of 50 at 0-4 tokens, 28 of 50 at the 4,096 cap | either closes `<think>` at once and rambles in the answer to the cap, or loops inside thinking ("Okay, so maybe I need to think about this. Let me try.") | 0.00 |
+| `q4_zero` (first 25) | +59% | 13 of 25 at 0-2 tokens, 12 of 25 at the cap | the same two failure modes | 0.00 |
+
+On the same first 25 problems `q3_zero` gives 12 near-zero and 13 capped: no
+difference from `q4_zero`. So fully zeroing either quadrant just breaks the
+model in the same bimodal way (skip thinking or loop forever); nothing
+Q3-specific. Only the mean FILL separates the quadrants (Q3-fill stops at
+once, Q4-fill never stops).
+
+**Where this leaves the Goodfire comparison.** In Qwen3-1.7B:
+1. Full Q3 ablation can produce "reasoning drops to ~0", with either fill, but
+   always with 0% accuracy and a model that is broken on ordinary text.
+2. With zero fill the same thing happens for Q4, so it is damage, not Q3.
+3. With mean fill the direction IS quadrant-specific (Q3 stop, Q4 runaway),
+   which fits the probe's "Q3 side pushes toward concluding".
+4. At doses that leave the model working, removing Q3 lengthens reasoning.
+So we do not reproduce "Q3 firings are what keeps the model reasoning" as a
+property of a working model. What we can say about Goodfire's own model is
+limited: it may tolerate full Q3 ablation far better than a dense 1.7B model
+does (their output was 176 tokens, not 0). The checkable question for them is
+whether accuracy and a Q4-with-the-same-fill control were measured.
+Files: `q3_zero__seed1.jsonl`, `q4_zero__first25__seed1.jsonl`.
+
+Figures for the two sections above: `figures/fig5_probe_conclude.png` (leak
+size as a dial: the urge to conclude rises with Q3 size and falls with Q4
+size, an X; "Wait" falls with both; hollow points are the replication on
+separate traces) and `figures/fig6_full_ablation.png` (every problem as a dot
+for each full-quadrant edit). Detail visible in fig6: in the zero-fill rows
+the problems with ~0 thinking tokens are not short answers; 19 of Q3's 22 and
+all 13 of Q4's 13 then loop in the ANSWER up to the cap. So full zeroing is
+"loop somewhere" for both quadrants, and only Q3 mean-fill actually stops.
