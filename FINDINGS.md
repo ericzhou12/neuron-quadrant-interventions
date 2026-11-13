@@ -506,3 +506,35 @@ Reading:
 - One seed; seed 0 and a x1.5 dose are queued.
 A trace read at random (idx 80) looks like normal, tidy reasoning that checks
 once and stops; not truncated or degenerate.
+
+**Where the length change happens: after the answer is first reached, not
+before (2026-11-13, seed 1, finished traces only).** Each trace is split at the
+first place the model's final answer appears in its thinking: "solve" (up to
+there) and "check" (everything after: re-deriving, second-guessing). The
+intact model spends about two thirds of its thinking in the check phase
+(median solve 372 tokens, check 798). Median paired ratio vs intact [95% CI]:
+
+| edit | solve phase | check phase |
+|---|---|---|
+| q3_grow@0.25 | 0.89 [0.86, 0.94] | 0.74 [0.66, 0.80] |
+| q4_grow@0.25 | 0.90 [0.87, 0.96] | 0.89 [0.82, 0.95] |
+| q3_zero@0.25 | 1.17 [1.10, 1.29] | 1.43 [1.33, 1.60] |
+| q4_zero@0.25 | 1.20 [1.10, 1.27] | 1.19 [1.09, 1.29] |
+| q3_qmean | 1.07 [1.00, 1.14] | 1.21 [1.12, 1.33] |
+| q4_qmean | 1.05 [1.01, 1.11] | 1.19 [1.08, 1.28] |
+
+Reading:
+- The solve phase changes by the same amount for Q3 and Q4 edits (grow ~0.9,
+  zero ~1.2). The Q3-specific part is entirely in the check phase: growing Q3
+  cuts re-checking to 0.74 (Q4: 0.89), removing Q3 stretches it to 1.43
+  (Q4: 1.19).
+- So "Q3 pushes toward concluding" acts where you would expect: once the
+  model already has its answer, Q3 size sets how long it keeps re-checking
+  before committing.
+- This also explains why accuracy does not move: the answer is usually
+  already there before the part that gets longer or shorter.
+Caveats: the split is a text heuristic (first occurrence of the final number,
+which can occasionally be a coincidence, e.g. a number from the question);
+traces that hit the cap or never state their answer are excluded (12-20% per
+condition), so runaway reasoning is not described here.
+`python analyze_phases.py <folder>`; output `phases_summary__seed1.json/.txt`.
