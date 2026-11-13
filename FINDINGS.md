@@ -341,3 +341,28 @@ as equally-damaging controls, thinking on, 50 problems, seed 1
 (`logs/full_ablation_seed1.log`). Read those results next to their damage
 numbers: a Q3-only shortening would replicate Goodfire; the same change under
 Q4 would point to damage.
+
+**The opposite-sign conclude effect replicates on different traces, with a
+dose-response (2026-11-13, probe `v3seed0`, 43 traces from the seed-0
+baseline; the run was stopped early at 43 of 60 to free memory).**
+Conclude early, log ratio vs intact [95% CI]:
+
+| edit | Q3 | Q4 | Q3 minus Q4 |
+|---|---|---|---|
+| shrink@0.5 (x0.5) | -0.63 [-1.02, -0.27] | +1.35 [+0.84, +1.90] | -1.98 [-2.67, -1.34] |
+| shrink@0.25 (x0.75) | -0.38 [-0.66, -0.14] | +0.76 [+0.47, +1.08] | -1.14 [-1.59, -0.76] |
+| zero@0.25 | -0.28 [-0.53, -0.06] | +0.66 [+0.40, +0.96] | -0.94 [-1.37, -0.56] |
+| grow@0.25 (x1.25) | +0.50 [+0.29, +0.73] | -0.65 [-0.93, -0.41] | +1.15 [+0.77, +1.58] |
+| grow@0.5 (x1.5) | +1.10 [+0.73, +1.53] | -1.12 [-1.58, -0.70] | +2.22 [+1.57, +2.95] |
+
+Every sign matches probe v2 (36 seed-1 traces), and the effect roughly
+doubles when the dose doubles, in both directions and both quadrants. "Wait"
+also replicates: shrink raises it (Q3 +0.18 / +0.54, Q4 +0.24 / +0.71 at
+0.25 / 0.5), grow lowers it (Q3 -0.07 / -0.09, Q4 -0.11 / -0.16).
+Goodfire-style fill: `q3_mean@0.05` conclude early +0.85 [+0.37, +1.39],
+`q3_mean@0.1` +1.39 [+0.81, +2.04], "Wait" unchanged; but `q4_mean` also
+raises conclude-early (+0.80 at 0.05) while doing 2.4x the damage, so the
+mean fill is not a clean Q3-vs-Q4 contrast.
+Still a probe result: whether generated reasoning actually gets shorter under
+`q3_grow` is not yet tested (that run was stopped before saving anything).
+Files: `probe_stop__v3seed0.jsonl`, `probe_summary__v3seed0.json/.txt`.
