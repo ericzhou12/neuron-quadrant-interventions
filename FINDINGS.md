@@ -540,7 +540,7 @@ condition), so runaway reasoning is not described here.
 `python analyze_phases.py <folder>`; output `phases_summary__seed1.json/.txt`.
 
 **A mild dose of the Goodfire-style fill does not shorten reasoning
-(2026-11-13, `q3_mean@0.1`, seed 1, n=200; Q4 control not yet run).**
+(2026-11-13, `q3_mean@0.1`, seed 1, n=200; Q4 control below).**
 Replacing a random 10% of Q3 firings with the neuron's all-token mean:
 accuracy 0.820 vs 0.840 (14 lost, 10 gained), median thinking 1,214 vs 1,365,
 median per-problem length ratio 0.99 [0.91, 1.00], cap hits 10% vs 11%,
@@ -551,9 +551,35 @@ model is broken. The probe over-predicted here: it showed a large rise in the
 urge to conclude EARLY (+1.4 to +1.6) but no change at the true end, and
 generation sided with the latter. Lesson: of the two probe measures, "at true
 end" tracked real length better than "conclude early" for this edit.
-`q4_mean@0.1` is queued, not run, so nothing here is a Q3-vs-Q4 statement.
+**The Q4 control for that edit hurts accuracy much more, without changing
+length (2026-11-13, `q4_mean@0.1`, seed 1, n=200).**
 
-**Paused (2026-11-13, at the owner's request).** No experiments are running.
-Queued, in order: `q4_mean@0.1` seed 1; seed-0 replication of the
-`zero@0.25` pair (`q3_zero@0.25__seed0.jsonl.partial` holds 100 problems and
-resumes); `grow@0.5` pair seed 1; `grow@0.25` pair seed 0.
+| edit | accuracy (lost/gained vs intact 0.840) | median thinking | length ratio [95% CI] | cap hits | WikiText loss | MMLU |
+|---|---|---|---|---|---|---|
+| `q3_mean@0.1` | 0.820 (14/10) | 1,214 | 0.99 [0.91, 1.00] | 10% | +1.1% | 0.487 |
+| `q4_mean@0.1` | 0.625 (52/9)  | 1,506 | 1.00 [0.92, 1.10] | 16% | +2.6% | 0.507 |
+
+Q3 edit vs Q4 edit on the same problems: length ratio 0.94 [0.81, 1.00],
+"wait"s -2.1 [-3.2, -1.1].
+
+What this shows and doesn't:
+- Neither mild mean-fill changes typical reasoning length. So the opposite
+  full-dose behaviours (Q3 stops at once, Q4 loops to the cap) do not show up
+  as a length shift at 10%; at most there is a hint in the same direction
+  (Q4 has more cap hits and more "wait"s), and the paired CI touches 1.
+- The Q4 edit costs 21 points of GSM8K accuracy while passing the damage gate
+  (WikiText +2.6%, MMLU unchanged). Of the 52 problems it loses, 28 finish
+  with a wrong number and 24 never finish. Reading the traces, the wrong ones
+  are confused arithmetic that the model then talks itself into ("190 is not
+  110 ... so the answer is 80"), not truncated reasoning.
+- This is an accuracy drop with NO shortening, which bears on the second
+  north-star question: here accuracy fell for a reason other than shorter
+  reasoning. It also shows the damage gate misses harm to multi-step
+  reasoning: WikiText and one-step MMLU looked fine.
+- Caveat: one seed, and "mean" for a Q4 firing replaces a small negative value
+  with the neuron's all-token mean, which is not the same size of change as
+  for Q3. So this is not a clean "Q4 matters more for accuracy" claim.
+
+**Queue (resumed 2026-11-13, one job at a time).** Next: seed-0 replication of
+the `zero@0.25` pair (`q3_zero@0.25__seed0.jsonl.partial` holds 100 problems
+and resumes); `grow@0.5` pair seed 1; `grow@0.25` pair seed 0.
