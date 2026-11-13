@@ -1,0 +1,18 @@
+# environment and caches
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# local assistant/tooling files
+.claude/
+CLAUDE.md
+
+# run-time artefacts: logs, unfinished runs, large per-token dumps
+results/**/logs/
+*.partial
+results/**/probe_timing*.jsonl
+results/**/*_aborted*.jsonl
+
+# unverified scratch scripts
+leak_direction.py
