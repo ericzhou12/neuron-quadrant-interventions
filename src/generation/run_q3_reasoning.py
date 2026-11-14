@@ -10,27 +10,27 @@ Conditions that break the model are skipped for GSM8K automatically.
 
 1. Find doses that don't break the model (minutes, no GSM8K):
 
-    python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --damage-only \
+    python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --damage-only \
         --conditions q3_qmean,q4_qmean,q3_zero@0.05,q3_zero@0.1,q3_zero@0.25,q4_zero@0.05,q4_zero@0.1,q4_zero@0.25
 
 2. Main runs, thinking on (hours; finished runs are skipped on restart). Add the
    largest q3_zero / q4_zero doses that passed step 1:
 
-    python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean
+    python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean
 
 3. Thinking off, same conditions (cheap):
 
-    python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean \
+    python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean \
         --no-thinking --max-new-tokens 1024
 
 4. Only if step 2 shows an effect: forced continuation and the dose-matched control:
 
-    python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions q3_qmean --force-to-baseline
-    python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none --force-like q3_qmean__forced
+    python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions q3_qmean --force-to-baseline
+    python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none --force-like q3_qmean__forced
 
 Then:
 
-    python analyze_q3.py results/q3__Qwen__Qwen3-1.7B
+    python src/generation/analyze_q3.py results/q3__Qwen__Qwen3-1.7B
 
 Outputs in results/q3__<model>/:
     <condition>[__genonly]__seed<k>.jsonl   one record per problem, with full text
@@ -51,6 +51,8 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+import sys as _sys, pathlib as _pl  # make the sibling src/ folders importable
+_sys.path[:0] = [str(_p) for _p in _pl.Path(__file__).resolve().parents[1].iterdir() if _p.is_dir()]
 from neuron_sparsity import get_mlps, pick_device
 from quadrants import STAGE0, compute_fills, describe, general_damage, intervene, parse_condition
 
@@ -725,7 +727,7 @@ def main():
               f"cap hits {statistics.mean(not r['finished_thinking'] for r in records):.3f} | "
               f"{100 * changed:.1f}% of firings changed | {(time.time() - t0) / 60:.1f} min")
 
-    print(f"\ndone. analyse with:  python analyze_q3.py {out_dir}")
+    print(f"\ndone. analyse with:  python src/generation/analyze_q3.py {out_dir}")
 
 
 if __name__ == "__main__":

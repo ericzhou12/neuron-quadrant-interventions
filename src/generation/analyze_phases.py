@@ -1,6 +1,6 @@
 """Where does reasoning get longer or shorter: before the model first reaches its answer, or after?
 
-    python analyze_phases.py results/q3__Qwen__Qwen3-1.7B [--seed 1]
+    python src/generation/analyze_phases.py results/q3__Qwen__Qwen3-1.7B [--seed 1]
 
 For each finished trace we find the first place in the thinking where the
 model's final answer (the number it ends up giving) appears as a number.

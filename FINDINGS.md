@@ -119,7 +119,7 @@ on this crude thinking-off proxy. `const` raises the rate in both quadrants
 
 Figures: `results/q3__Qwen__Qwen3-1.7B/figures/fig1_damage_dose.png` (dose
 scan: matched damage, Q3-only behaviour shift) and `fig2_putback_ladder.png`
-(damage ladder, whole quadrant and @0.25). Regenerate with `python make_figures.py`.
+(damage ladder, whole quadrant and @0.25). Regenerate with `python src/figures/make_figures.py`.
 
 **Infrastructure note (2026-11-13).** The first thinking-on run used
 `model.generate` with batches of 8 and managed 56/200 baseline problems in two
@@ -178,7 +178,7 @@ makes the model a bit less sure of itself, i.e. closer to H0/H1 than to a
 Q3-specific signal. So for qmean: H2 gets no support (erasing the variation
 does not shorten reasoning), and nothing here separates Q3 from Q4.
 The `zero@0.25` pair (the edit that DID separate Q3 from Q4 on the
-direct-answer proxy) is the remaining test. `python compare_runs.py <folder>`
+direct-answer proxy) is the remaining test. `python src/generation/compare_runs.py <folder>`
 reproduces these tables.
 
 **Removing 25% of Q3 firings makes reasoning LONGER, and more so than
@@ -273,7 +273,7 @@ Reading:
   wait count.
 
 Files: `probe_stop__main.jsonl` (per trace), `probe_summary__main.json/.txt`;
-`python analyze_probe.py <folder> [tag]` regenerates the summary.
+`python src/probe/analyze_probe.py <folder> [tag]` regenerates the summary.
 
 **The urge to CONCLUDE moves in opposite directions for Q3 and Q4
 (2026-11-13, probe v2, 36 traces, exactly paired; the most interesting
@@ -537,7 +537,7 @@ Caveats: the split is a text heuristic (first occurrence of the final number,
 which can occasionally be a coincidence, e.g. a number from the question);
 traces that hit the cap or never state their answer are excluded (12-20% per
 condition), so runaway reasoning is not described here.
-`python analyze_phases.py <folder>`; output `phases_summary__seed1.json/.txt`.
+`python src/generation/analyze_phases.py <folder>`; output `phases_summary__seed1.json/.txt`.
 
 **A mild dose of the Goodfire-style fill does not shorten reasoning
 (2026-11-13, `q3_mean@0.1`, seed 1, n=200; Q4 control below).**

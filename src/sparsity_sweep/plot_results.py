@@ -1,8 +1,8 @@
 """Plot KL damage against the share of neurons ablated.
 
-    python plot_results.py results/Qwen__Qwen3-0.6B.csv
-    python plot_results.py results/Qwen__Qwen3-0.6B.csv results/Qwen__Qwen3-1.7B.csv   # overlay
-    python plot_results.py --log results/...csv   # log-log version, saved as *_log.png
+    python src/sparsity_sweep/plot_results.py results/Qwen__Qwen3-0.6B.csv
+    python src/sparsity_sweep/plot_results.py results/Qwen__Qwen3-0.6B.csv results/Qwen__Qwen3-1.7B.csv   # overlay
+    python src/sparsity_sweep/plot_results.py --log results/...csv   # log-log version, saved as *_log.png
 
 Linear (default): both axes linear. The right panel is a zoom on 85-100%
 ablated, where the curves separate; it is a crop, not a rescale.

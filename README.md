@@ -15,16 +15,24 @@ Goodfire's full ablation is still running, so treat nothing here as final.
 
 ## Layout
 
-| file | what it does |
+Run every command from the repository root (results are written to `results/`
+relative to where you run from). Scripts find each other's folders on their own.
+
+| folder / file | what it does |
 |---|---|
+| **`src/core/`** | shared building blocks, imported by everything else |
 | `quadrants.py` | hooks on gate/up pre-activations, quadrant masks, all edits (`zero`, `mean`, `qmean`, `shrink`, `grow`, put-backs, layer restriction) |
-| `run_q3_reasoning.py` | damage gate (WikiText, MMLU) and GSM8K generation, thinking on/off, forced continuation |
 | `fast_gen.py` | decoding loop that drops finished rows and resumes interrupted runs |
-| `probe_stop.py` | teacher-forced probe: replays the intact model's reasoning under each edit and measures the urge to say "Wait" or to conclude |
-| `analyze_q3.py`, `compare_runs.py`, `analyze_probe.py`, `analyze_timing.py` | paired statistics |
-| `make_figures.py`, `plot_q3.py` | figures |
-| `neuron_sparsity.py`, `run_sweep.py`, `plot_results.py` | earlier top-k sparsity sweep |
-| `test_quadrants.py`, `test_smoke.py` | offline checks on a tiny random model |
+| `neuron_sparsity.py` | model helpers (finding the MLPs, picking a device) and the top-k ablation code |
+| **`src/generation/`** | the main experiment: edit the model, let it solve GSM8K, compare with the intact model |
+| `run_q3_reasoning.py` | damage gate (WikiText, MMLU) and GSM8K generation, thinking on/off, forced continuation |
+| `analyze_q3.py`, `compare_runs.py`, `analyze_phases.py` | paired statistics; solve-phase vs check-phase split |
+| **`src/probe/`** | the teacher-forced probe (no sampling) |
+| `probe_stop.py` | replays the intact model's reasoning under each edit and measures the urge to say "Wait" or to conclude |
+| `analyze_probe.py`, `analyze_timing.py` | probe statistics; leak activity around "Wait" and the final answer |
+| **`src/figures/`** | `make_figures.py`, `plot_q3.py` |
+| **`src/sparsity_sweep/`** | earlier top-k sparsity sweep: `run_sweep.py`, `plot_results.py` |
+| **`tests/`** | `test_quadrants.py`, `test_smoke.py`: offline checks on a tiny random model |
 | `results/` | per-problem records (`.jsonl`, with full text), damage scans, probe output, figures; `results/old/` holds superseded runs |
 
 ## Setup
@@ -34,7 +42,7 @@ cd neuron-quadrant-interventions
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python test_quadrants.py      # offline checks, seconds
+python tests/test_quadrants.py      # offline checks, seconds
 ```
 
 The first real run downloads the model, GSM8K and WikiText from Hugging Face.
@@ -100,25 +108,25 @@ overrides this.
 
 ```bash
 # 1. Find doses that don't break the model (minutes, no GSM8K)
-python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --damage-only \
+python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --damage-only \
     --conditions q3_qmean,q4_qmean,q3_zero@0.05,q3_zero@0.1,q3_zero@0.25,q4_zero@0.05,q4_zero@0.1,q4_zero@0.25
 
 # 2. Thinking on, the main experiment (hours; finished runs are skipped on restart).
 #    Add the largest q3_zero/q4_zero doses that passed step 1, e.g. q3_zero@0.1,q4_zero@0.1
-python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean
+python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean
 
 # 3. Thinking off, same conditions (cheap)
-python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean \
+python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none,q3_qmean,q4_qmean \
     --no-thinking --max-new-tokens 1024
 
 # 4. Only if step 2 shows an effect: forced continuation, then the dose-matched control
-python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions q3_qmean --force-to-baseline
-python run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none --force-like q3_qmean__forced
+python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions q3_qmean --force-to-baseline
+python src/generation/run_q3_reasoning.py --model Qwen/Qwen3-1.7B --n-problems 200 --conditions none --force-like q3_qmean__forced
 
 # 5. Second seed before trusting anything (--seed 1), and --gen-only to rule out misreading the question
 
 # Analyse everything in the folder
-python analyze_q3.py results/q3__Qwen__Qwen3-1.7B
+python src/generation/analyze_q3.py results/q3__Qwen__Qwen3-1.7B
 ```
 
 ### Conditions

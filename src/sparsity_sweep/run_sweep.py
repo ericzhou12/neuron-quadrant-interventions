@@ -2,11 +2,11 @@
 
 Usage (start small to check everything runs):
 
-    python run_sweep.py --model Qwen/Qwen3-0.6B --eval-batches 8
+    python src/sparsity_sweep/run_sweep.py --model Qwen/Qwen3-0.6B --eval-batches 8
 
 Then the real run:
 
-    python run_sweep.py --model Qwen/Qwen3-1.7B
+    python src/sparsity_sweep/run_sweep.py --model Qwen/Qwen3-1.7B
 
 Writes results/<model-name>.csv with one row per (mode, keep_frac).
 """
@@ -22,6 +22,8 @@ import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+import sys as _sys, pathlib as _pl  # make the sibling src/ folders importable
+_sys.path[:0] = [str(_p) for _p in _pl.Path(__file__).resolve().parents[1].iterdir() if _p.is_dir()]
 from neuron_sparsity import (AblationSpec, bootstrap_ci, compute_neuron_means, evaluate, get_mlps,
                              pick_device)
 

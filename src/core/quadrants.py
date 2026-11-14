@@ -22,6 +22,8 @@ from contextlib import contextmanager
 import torch
 import torch.nn.functional as F
 
+import sys as _sys, pathlib as _pl  # make the sibling src/ folders importable
+_sys.path[:0] = [str(_p) for _p in _pl.Path(__file__).resolve().parents[1].iterdir() if _p.is_dir()]
 from neuron_sparsity import get_mlps
 
 QUADRANTS = ("q1", "q2", "q3", "q4")

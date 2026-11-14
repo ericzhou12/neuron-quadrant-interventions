@@ -1,6 +1,6 @@
 """Offline checks for the Q3 experiment on a tiny random model. No downloads.
 
-    python test_quadrants.py
+    python tests/test_quadrants.py
 """
 
 import json
@@ -13,6 +13,8 @@ from pathlib import Path
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 
+import sys as _sys, pathlib as _pl  # make the src/ folders importable
+_sys.path[:0] = [str(_p) for _p in (_pl.Path(__file__).resolve().parents[1] / "src").iterdir() if _p.is_dir()]
 from analyze_q3 import compare, load_runs, mcnemar_exact
 from quadrants import CONDITIONS, apply_condition, compute_fills, general_damage, intervene, quadrant_masks
 from run_q3_reasoning import extract_answer, is_correct, run_name
@@ -144,7 +146,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert r["n"] == 60 and r["lost"] == 15 and r["gained"] == 0
     assert r["acc_change_barely_changed"] == 0 and r["acc_change_shrank_a_lot"] < 0
     assert r["length_ratio_ci_low"] <= r["length_ratio"] <= r["length_ratio_ci_high"]
-    res = subprocess.run([sys.executable, "analyze_q3.py", str(tmp)], capture_output=True, text=True)
+    res = subprocess.run([sys.executable, str(_pl.Path(__file__).resolve().parents[1] / "src/generation/analyze_q3.py"), str(tmp)], capture_output=True, text=True)
     assert res.returncode == 0, res.stderr
     assert (tmp / "summary.csv").exists()
 
@@ -249,7 +251,7 @@ with tempfile.TemporaryDirectory() as tmp:
         (tmp / f"{name}.jsonl").write_text("\n".join(json.dumps(x) for x in recs))
     (tmp / "damage.json").write_text(json.dumps({"none": {"mmlu_accuracy": 0.6},
                                                  "q3_zero": {"kl": 0.1, "loss_increase_pct": 2, "mmlu_accuracy": 0.58}}))
-    res = subprocess.run([sys.executable, "analyze_q3.py", str(tmp)], capture_output=True, text=True)
+    res = subprocess.run([sys.executable, str(_pl.Path(__file__).resolve().parents[1] / "src/generation/analyze_q3.py"), str(tmp)], capture_output=True, text=True)
     assert res.returncode == 0, res.stderr
     assert "4. Thinking on vs off" in res.stdout, res.stdout
     import csv as _csv

@@ -1,6 +1,6 @@
 """Offline sanity check on a tiny random model. No downloads needed.
 
-    python test_smoke.py
+    python tests/test_smoke.py
 
 Checks the properties the real experiment relies on:
   1. keeping 100% of neurons changes nothing (KL = 0)
@@ -13,6 +13,8 @@ Checks the properties the real experiment relies on:
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 
+import sys as _sys, pathlib as _pl  # make the src/ folders importable
+_sys.path[:0] = [str(_p) for _p in (_pl.Path(__file__).resolve().parents[1] / "src").iterdir() if _p.is_dir()]
 from neuron_sparsity import AblationSpec, _keep_mask, bootstrap_ci, compute_neuron_means, evaluate, get_mlps
 
 torch.manual_seed(0)

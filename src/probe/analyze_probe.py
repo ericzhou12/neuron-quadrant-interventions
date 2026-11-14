@@ -1,6 +1,6 @@
 """Summarise the teacher-forced probe (probe_stop*.jsonl), paired against the intact model.
 
-    python analyze_probe.py results/q3__Qwen__Qwen3-1.7B [tag ...]
+    python src/probe/analyze_probe.py results/q3__Qwen__Qwen3-1.7B [tag ...]
 
 Per condition, over the same intact traces:
     KL            damage on the reasoning text (use it to match Q3 and Q4 edits)

@@ -19,7 +19,7 @@ H2 (token-specific signal) predicts a consistent difference: e.g. Q3 activity
 drops before </think> and/or rises before "Wait", and Q4 doesn't show the same.
 H3 (steady bias) predicts no difference.
 
-    python analyze_timing.py results/q3__Qwen__Qwen3-1.7B/probe_timing.jsonl
+    python src/probe/analyze_timing.py results/q3__Qwen__Qwen3-1.7B/probe_timing.jsonl
 """
 
 from __future__ import annotations

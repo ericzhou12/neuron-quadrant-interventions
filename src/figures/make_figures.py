@@ -1,7 +1,7 @@
 """Publication-style figures for the Q3 reasoning project.
 
-    python make_figures.py [results/q3__Qwen__Qwen3-1.7B]
-    python make_figures.py --selftest      # synthetic data for figs 3-6
+    python src/figures/make_figures.py [results/q3__Qwen__Qwen3-1.7B]
+    python src/figures/make_figures.py --selftest      # synthetic data for figs 3-6
 
 Writes PNGs (dpi 160) into <results>/figures/. Any figure whose input data does
 not exist yet is skipped with a printed note.
@@ -33,6 +33,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
+import sys as _sys, pathlib as _pl  # make the sibling src/ folders importable
+_sys.path[:0] = [str(_p) for _p in _pl.Path(__file__).resolve().parents[1].iterdir() if _p.is_dir()]
 from analyze_q3 import load_runs  # noqa: E402
 
 DEFAULT_FOLDER = "results/q3__Qwen__Qwen3-1.7B"

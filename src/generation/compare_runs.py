@@ -1,6 +1,6 @@
 """Quick paired comparison of thinking-on runs against the intact model.
 
-    python compare_runs.py results/q3__Qwen__Qwen3-1.7B [--seed 1]
+    python src/generation/compare_runs.py results/q3__Qwen__Qwen3-1.7B [--seed 1]
 
 For each finished (or .partial) run: accuracy with lost/gained counts, median
 thinking tokens, the median per-problem length ratio with a bootstrap 95%

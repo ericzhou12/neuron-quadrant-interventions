@@ -1,6 +1,6 @@
 """One-figure overview of a Q3 results folder.
 
-    python plot_q3.py results/q3__Qwen__Qwen3-1.7B
+    python src/figures/plot_q3.py results/q3__Qwen__Qwen3-1.7B
 
 Reads summary.csv (run analyze_q3.py first), damage.json and the per-problem
 jsonl files. Draws one row per condition and four panels:

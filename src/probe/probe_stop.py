@@ -31,7 +31,7 @@ With --timing, also saves per-position Q3/Q4 activity from the intact model
 (share of neurons in each quadrant, and their summed activation, per layer
 group) so you can see whether Q3 activity changes right before </think> or "Wait".
 
-    python probe_stop.py --model Qwen/Qwen3-1.7B --n-traces 100 \
+    python src/probe/probe_stop.py --model Qwen/Qwen3-1.7B --n-traces 100 \
         --conditions none,q3_qmean,q4_qmean,q3_zero@0.25,q4_zero@0.25,q3_resample,q3_pool,q3_const --timing
 """
 
@@ -47,6 +47,8 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+import sys as _sys, pathlib as _pl  # make the sibling src/ folders importable
+_sys.path[:0] = [str(_p) for _p in _pl.Path(__file__).resolve().parents[1].iterdir() if _p.is_dir()]
 from neuron_sparsity import get_mlps, pick_device
 from quadrants import compute_fills, describe, intervene, parse_condition, quadrant_masks
 from run_q3_reasoning import PROMPT_SUFFIX, calibration_batches, load_gsm8k, read_jsonl

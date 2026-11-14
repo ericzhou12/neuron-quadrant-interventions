@@ -1,6 +1,6 @@
 """Analyse stage 0 results.
 
-    python analyze_q3.py results/q3__Qwen__Qwen3-1.7B
+    python src/generation/analyze_q3.py results/q3__Qwen__Qwen3-1.7B
 
 Every condition is compared against the intact model (`none`) on the SAME
 problems with the SAME seed, problem by problem. Answers two questions:
