@@ -743,5 +743,63 @@ end the text, leaving no answer section (the run's own printed accuracy,
   the model continue does not fix its answers; it cannot show what longer
   reasoning the model chose for itself would do. One seed.
 
-**Queue (one job at a time).** Last item: `shrink@0.5` pair seed 1
-(lengthening side of the dose-response). Then stop, at the owner's request.
+**Halving the leaks doubles reasoning and many problems never finish
+(2026-11-14, `shrink@0.5` pair, seed 1, n=200).** Every firing multiplied by 0.5.
+
+| edit | accuracy (intact 0.840) lost/gained | median thinking | length ratio [95% CI] | cap hits (intact 11%) | solve / check ratio | WikiText loss | MMLU |
+|---|---|---|---|---|---|---|---|
+| `q3_shrink@0.5` | 0.540 62/2 | 3,441 | 2.09 [1.95, 2.33] | 38.5% | 1.61 / 2.46 | +5.4% | 0.487 |
+| `q4_shrink@0.5` | 0.720 32/8 | 2,561 | 1.61 [1.47, 1.76] | 19.5% | 1.58 / 1.68 | +7.1% | 0.520 |
+
+Q3 vs Q4 on the same problems: length ratio 1.26 [1.12, 1.33].
+
+- Length: the mirror image of the grow result. Smaller leaks -> longer
+  reasoning for both quadrants, more so for Q3, and again the Q3-specific
+  part sits in the check phase (2.46 vs 1.68; solve phase is the same, 1.6).
+- Accuracy falls mainly because reasoning never ends: of the 62 problems Q3
+  loses, 47 never finish thinking (Q4: 19 of 32). Among problems that do
+  finish, Q3 scores 0.878 (the intact model scores 0.984 on those same
+  problems) and Q4 0.894 (intact 0.925). The unfinished traces go round the
+  same sub-calculation repeatedly.
+- So here accuracy drops with LONGER reasoning, through runaway loops. This
+  is the opposite route from Goodfire's "shorter reasoning, lower accuracy",
+  and at the full dose (`q3_zero`, leaks x0) this model splits between
+  instant stop and running to the cap.
+- Damage is moderate but passes the gate (Q4's is larger, yet Q4 lengthens
+  less, so the Q3 excess is not explained by general damage).
+
+**Gain dose-response, both directions (seed 1; `fig7_gain_dose_response.png`,
+`gain_dose_summary__seed1.json`).**
+
+| leak size | Q3 length ratio | Q3 accuracy | Q4 length ratio | Q4 accuracy |
+|---|---|---|---|---|
+| x0.5  | 2.09 | 0.540 | 1.61 | 0.720 |
+| x1 (intact) | 1 | 0.840 | 1 | 0.840 |
+| x1.25 | 0.80 | 0.835 | 0.93 | 0.820 |
+| x1.5  | 0.55 | 0.855 | 0.86 | 0.825 |
+| x1.75 | 0.40 | 0.695 | 0.82 | 0.750 |
+| x2    | fails damage gate | | fails damage gate | |
+
+Summary of where this leaves the north-star questions (Qwen3-1.7B, GSM8K):
+1. Does Q3 control reasoning length? Yes, as a graded dial: thinking length
+   falls monotonically as Q3 leaks are scaled from x0.5 to x1.75 (2.1x down
+   to 0.4x), Q4 does the same more weakly (1.6x to 0.8x), and the Q3-specific
+   part is in how long the model keeps re-checking. Replicated on a second
+   seed at x1.25 and for `zero@0.25`.
+2. Does accuracy drop because reasoning gets shorter? Not here. Reasoning
+   45% shorter costs nothing (x1.5); where accuracy does fall with shorter
+   reasoning (x1.75), restoring the length by forcing does not restore it
+   and Q4 loses accuracy with little shortening; and accuracy also falls
+   with much LONGER reasoning (x0.5) and with no length change
+   (`q4_mean@0.1`).
+3. Hypotheses: the smooth two-way dose-response to a pure size change fits
+   H3 (leaks act through their overall level) better than H1/H2; not H0 for
+   x1.25-x1.5 (negligible damage, Q4 control much weaker). At the extreme
+   doses general damage is mixed in.
+Limits: one model, one task that is easy for it, mostly one seed at the
+larger doses, and no dose reproduces Goodfire's full-ablation collapse in a
+working model.
+
+**Stopped (2026-11-14, at the owner's request): the queue is finished and
+nothing is running.** Not started: Qwen3-0.6B / 4B, a harder task than GSM8K,
+thinking-off runs for the gain pairs, seed-0 replication of x0.5 / x1.5 / x1.75.

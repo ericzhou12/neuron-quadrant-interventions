@@ -30,7 +30,7 @@ relative to where you run from). Scripts find each other's folders on their own.
 | **`src/probe/`** | the teacher-forced probe (no sampling) |
 | `probe_stop.py` | replays the intact model's reasoning under each edit and measures the urge to say "Wait" or to conclude |
 | `analyze_probe.py`, `analyze_timing.py` | probe statistics; leak activity around "Wait" and the final answer |
-| **`src/figures/`** | `make_figures.py`, `plot_q3.py` |
+| **`src/figures/`** | `make_figures.py`, `plot_q3.py`, `fig_gain_dose.py` (leak-size dose-response) |
 | **`src/sparsity_sweep/`** | earlier top-k sparsity sweep: `run_sweep.py`, `plot_results.py` |
 | **`tests/`** | `test_quadrants.py`, `test_smoke.py`: offline checks on a tiny random model |
 | `results/` | per-problem records (`.jsonl`, with full text), damage scans, probe output, figures; `results/old/` holds superseded runs |
