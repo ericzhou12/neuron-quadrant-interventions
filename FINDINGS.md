@@ -580,6 +580,26 @@ What this shows and doesn't:
   with the neuron's all-token mean, which is not the same size of change as
   for Q3. So this is not a clean "Q4 matters more for accuracy" claim.
 
-**Queue (resumed 2026-11-13, one job at a time).** Next: seed-0 replication of
-the `zero@0.25` pair (`q3_zero@0.25__seed0.jsonl.partial` holds 100 problems
-and resumes); `grow@0.5` pair seed 1; `grow@0.25` pair seed 0.
+**Seed-0 replication of the `zero@0.25` pair (2026-11-13, n=200 each).**
+
+| seed | edit | accuracy (intact) lost/gained | median thinking | length ratio [95% CI] | cap hits (intact) |
+|---|---|---|---|---|---|
+| 1 | `q3_zero@0.25` | 0.800 (0.840) 15/7  | 2,156 | 1.38 [1.25, 1.46] | 17% (11%) |
+| 1 | `q4_zero@0.25` | 0.835 (0.840) 11/10 | 1,734 | 1.16 [1.10, 1.28] | 11.5% (11%) |
+| 0 | `q3_zero@0.25` | 0.795 (0.835) 14/6  | 1,952 | 1.27 [1.17, 1.35] | 16% (14%) |
+| 0 | `q4_zero@0.25` | 0.815 (0.835) 11/7  | 1,687 | 1.18 [1.11, 1.24] | 14% (14%) |
+
+Q3 edit vs Q4 edit, same problems: seed 1 ratio 1.14 [1.08, 1.21]; seed 0
+ratio 1.07 [1.01, 1.17].
+
+- Replicates in direction: zeroing a quarter of either leak quadrant lengthens
+  reasoning, and Q3 lengthens it more than Q4 on both seeds.
+- The Q3-specific part is smaller on seed 0 (7% vs 14%) and its CI only just
+  excludes 1. Treat "Q3 more than Q4" as a small effect, roughly 5-15%; most
+  of the lengthening (about 16-18%) is shared by both quadrants.
+- Accuracy: Q3 loses about 4 points on both seeds (15/7 and 14/6 lost/gained;
+  neither is significant alone by McNemar), Q4 0.5-2 points. Longer reasoning
+  did not buy accuracy.
+
+**Queue (one job at a time).** Next: `grow@0.5` pair seed 1; `grow@0.25` pair
+seed 0.
