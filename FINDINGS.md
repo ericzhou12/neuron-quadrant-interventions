@@ -646,6 +646,18 @@ appears, check = after it):
   direction is the opposite of Goodfire's ablation, so this supports "Q3 size
   controls reasoning length" but not their specific collapse.
 
-**Queue (one job at a time).** Next: `grow@0.25` pair seed 0 (replication);
-then `grow@1.0` pair seed 1 (does the dose-response continue, and where does
-accuracy start to fall?).
+**Seed-0 replication of the `grow@0.25` pair (2026-11-14, n=200 each).**
+
+| seed | edit | accuracy (intact) lost/gained | median thinking | length ratio [95% CI] | Q3 vs Q4, same problems |
+|---|---|---|---|---|---|
+| 1 | `q3_grow@0.25` | 0.835 (0.840) 8/7  |   962 | 0.80 [0.76, 0.86] | 0.84 [0.80, 0.93] |
+| 1 | `q4_grow@0.25` | 0.820 (0.840) 12/8 | 1,226 | 0.93 [0.83, 0.99] | |
+| 0 | `q3_grow@0.25` | 0.840 (0.835) 6/7  |   966 | 0.79 [0.72, 0.85] | 0.86 [0.82, 0.92] |
+| 0 | `q4_grow@0.25` | 0.860 (0.835) 9/14 | 1,176 | 0.89 [0.79, 0.97] | |
+
+The shortening replicates almost exactly (0.80 and 0.79), as does the
+Q3-over-Q4 part (0.84 and 0.86), and accuracy is unchanged on both seeds.
+This is the most stable effect in the project so far.
+
+**Queue (one job at a time).** Next: `grow@1.0` pair seed 1 (does the
+dose-response continue, and where does accuracy start to fall?).
