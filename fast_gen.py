@@ -90,13 +90,17 @@ def generate_batch(model, tokenizer, prompts: list[str], condition: str, fills, 
                     if thinking[i]:
                         o["stop_hazard"] += p_stop[row]
                         o["wait_hazard"] += p_wait[row]
-                    if thinking[i] and tok == think_end_id:
+                    # A row can also quit thinking by emitting end-of-text without
+                    # ever closing </think>. When forcing, that counts as a stop
+                    # attempt too (otherwise an edited model escapes the forcing).
+                    stop_try = tok == think_end_id or (force_fn is not None and tok in eos_ids)
+                    if thinking[i] and stop_try:
                         if (force_fn is not None and o["n_forced"] < max_forced
                                 and force_fn(i, len(o["ids"]), o["n_forced"])):
                             o["n_forced"] += 1
                             tok, *rest = wait_ids
                             pending[i] = list(rest)
-                        else:
+                        elif tok == think_end_id:
                             thinking[i] = False
                 o["ids"].append(tok)
                 finished = (tok in eos_ids and not pending[i]) or len(o["ids"]) >= max_new_tokens
