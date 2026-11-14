@@ -659,5 +659,13 @@ The shortening replicates almost exactly (0.80 and 0.79), as does the
 Q3-over-Q4 part (0.84 and 0.86), and accuracy is unchanged on both seeds.
 This is the most stable effect in the project so far.
 
-**Queue (one job at a time).** Next: `grow@1.0` pair seed 1 (does the
-dose-response continue, and where does accuracy start to fall?).
+**Doubling the leaks breaks the model (2026-11-14, `grow@1.0`, gate only).**
+`q3_grow@1.0`: WikiText loss +11.7%, MMLU 0.423 (intact 0.503).
+`q4_grow@1.0`: WikiText loss +10.5%, MMLU 0.450. Both fail the damage gate
+(limits: +10% loss, 0.05 MMLU drop), so GSM8K was not run, per the working
+agreement. The usable range for the grow knob on this model therefore ends
+somewhere between +50% (loss +1.1%) and +100%.
+
+**Queue (one job at a time).** Next: `grow@0.75` pair seed 1 (largest dose
+likely to pass the gate); then the `shrink@0.5` pair to fill in the
+lengthening side of the same dose-response curve.
