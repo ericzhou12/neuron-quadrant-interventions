@@ -701,6 +701,47 @@ Q3 vs Q4 on the same problems at `grow@0.75`: length ratio 0.48 [0.43, 0.54].
   `q3_grow@0.75` keep thinking to the intact length and see whether accuracy
   returns, against the intact model forced the same number of times.
 
-**Queue (one job at a time).** Next: `q3_grow@0.75` with forced continuation
-to the intact length (seed 1), then the intact model forced the same number
-of times (control); then the `shrink@0.5` pair.
+**Forcing `q3_grow@0.75` to think as long as the intact model does not bring
+accuracy back (2026-11-14, seed 1, n=200).** Forced continuation: each time
+the model tries to stop thinking, "Wait" is inserted until it reaches the
+intact model's thinking length on that problem (at most 20 times).
+
+Accuracy here is rescored on the last `\boxed{}` anywhere in the output,
+because forced runs often write the answer inside the thinking block and then
+end the text, leaving no answer section (the run's own printed accuracy,
+0.05-0.07, is that scoring artifact, not a collapse).
+
+| run | accuracy (rescored) | median thinking | forcings per problem | hit 4,096 cap |
+|---|---|---|---|---|
+| intact | 0.845 | 1,365 | 0 | 27 |
+| intact, forced the same number of times (control) | 0.840 | 2,332 | 5.9 | 55 |
+| `q3_grow@0.75` | 0.695 | 475 | 0 | 10 |
+| `q3_grow@0.75` forced, first attempt | 0.700 | 683 | 1.3 | 11 |
+| `q3_grow@0.75` forced, corrected | 0.685 | 1,684 | 8.3 | 54 |
+
+- First attempt: the edited model escaped the forcing by ending the text
+  without closing its thinking, reaching only 60% of the target length.
+  `fast_gen.py` now counts end-of-text during thinking as a stop attempt
+  (files tagged `eos`). After the fix 186/200 problems reach at least 90% of
+  the target (median 1.05x).
+- Result: at full intact length the edited model scores 0.685 vs 0.695
+  unforced (10 lost, 8 gained, p = 0.81). Of the 41 problems the edit lost,
+  forcing recovers 7; it breaks 8 that were right.
+- Control: forcing the intact model as often costs nothing (0.840 vs 0.845;
+  6 lost, 5 gained), so forcing itself is not what holds accuracy down.
+  (The control got 5.9 forcings per problem rather than 8.3, since it is only
+  forced when it tries to stop.)
+- Conclusion for the north-star question, at this dose: the accuracy loss is
+  not repaired by restoring reasoning length, so it is not simply "because
+  reasoning got shorter". Together with the earlier points (Q4 loses 9 points
+  with little shortening; `q3_grow@0.5` is 45% shorter at no cost; lost
+  problems were shortened less than kept ones) the evidence consistently
+  says length and accuracy are separate effects of the edit.
+- Limit: forced reasoning is not natural reasoning. The edited model needs
+  many pushes and often just restates its answer after each "Wait"
+  ("the answer is 180 ... Wait ... 180 is correct"). So this shows that making
+  the model continue does not fix its answers; it cannot show what longer
+  reasoning the model chose for itself would do. One seed.
+
+**Queue (one job at a time).** Last item: `shrink@0.5` pair seed 1
+(lengthening side of the dose-response). Then stop, at the owner's request.
