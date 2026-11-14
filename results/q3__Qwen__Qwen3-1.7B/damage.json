@@ -460,5 +460,33 @@
     "mmlu_prompt_version": 4,
     "passes_gate": true,
     "gate_reason": "ok"
+  },
+  "q3_grow@0.5": {
+    "kl": 0.167805918525247,
+    "loss_clean": 3.31628615435432,
+    "loss_intervened": 3.352083572686887,
+    "loss_increase_pct": 1.079442987317747,
+    "mmlu_accuracy": 0.5066666666666667,
+    "mmlu_letter_mass": 0.9966048600995722,
+    "mmlu_direct_rate": 0.47,
+    "mmlu_direct_accuracy": 0.26666666666666666,
+    "mmlu_n": 300,
+    "mmlu_prompt_version": 4,
+    "passes_gate": true,
+    "gate_reason": "ok"
+  },
+  "q4_grow@0.5": {
+    "kl": 0.17687538371366612,
+    "loss_clean": 3.31628615435432,
+    "loss_intervened": 3.3651063806870405,
+    "loss_increase_pct": 1.4721355172749195,
+    "mmlu_accuracy": 0.52,
+    "mmlu_letter_mass": 0.9975269645452499,
+    "mmlu_direct_rate": 0.6566666666666666,
+    "mmlu_direct_accuracy": 0.37,
+    "mmlu_n": 300,
+    "mmlu_prompt_version": 4,
+    "passes_gate": true,
+    "gate_reason": "ok"
   }
 }

@@ -601,5 +601,51 @@ ratio 1.07 [1.01, 1.17].
   neither is significant alone by McNemar), Q4 0.5-2 points. Longer reasoning
   did not buy accuracy.
 
-**Queue (one job at a time).** Next: `grow@0.5` pair seed 1; `grow@0.25` pair
-seed 0.
+**Growing Q3 shortens reasoning in a dose-dependent way, with no loss of
+accuracy (2026-11-13, `grow@0.5` pair, seed 1, n=200 each).** This is the
+clearest result so far for both north-star questions.
+
+| edit | accuracy (intact 0.840) lost/gained | median thinking (intact 1,365) | length ratio [95% CI] | cap hits (intact 11%) | WikiText loss | MMLU |
+|---|---|---|---|---|---|---|
+| `q3_grow@0.25` | 0.835  8/7  |   962 | 0.80 [0.76, 0.86] | 8.5% | +0.2% | 0.517 |
+| `q3_grow@0.5`  | 0.855  9/12 |   690 | 0.55 [0.51, 0.61] | 3%   | +1.1% | 0.507 |
+| `q4_grow@0.25` | 0.820 12/8  | 1,226 | 0.93 [0.83, 0.99] | 11%  | -0.1% | 0.513 |
+| `q4_grow@0.5`  | 0.825 10/7  | 1,090 | 0.86 [0.78, 0.92] | 11.5%| +1.5% | 0.520 |
+
+Q3 edit vs Q4 edit, same problems: `grow@0.25` 0.84 [0.80, 0.93];
+`grow@0.5` 0.65 [0.61, 0.69].
+
+By phase (`analyze_phases.py`; solve = up to the first time the final number
+appears, check = after it):
+
+| edit | solve ratio | check ratio |
+|---|---|---|
+| `q3_grow@0.25` | 0.89 [0.86, 0.94] | 0.74 [0.66, 0.80] |
+| `q3_grow@0.5`  | 0.75 [0.72, 0.80] | 0.43 [0.41, 0.47] |
+| `q4_grow@0.25` | 0.90 [0.87, 0.96] | 0.89 [0.82, 0.95] |
+| `q4_grow@0.5`  | 0.85 [0.80, 0.90] | 0.80 [0.70, 0.89] |
+
+- Dose-response: making every Q3 leak 25% larger cuts thinking by about 20%;
+  50% larger cuts it by about 45%. The Q4 control shortens far less (7%, 14%),
+  so most of this is specific to Q3. General damage is negligible for both.
+- Where the tokens go: mostly the re-checking after the answer is first
+  reached (check phase down 57% at `q3_grow@0.5`), plus a smaller cut to the
+  solving itself (25%). No trace has near-zero thinking; the model still
+  solves, checks once and stops. It also gets stuck far less (cap hits 3% vs
+  11%).
+- Accuracy does not fall: 0.855 vs 0.840 (9 lost, 12 gained; not different).
+  So in this model, reasoning made ~45% shorter through Q3 costs nothing on
+  GSM8K. On the question "does accuracy drop BECAUSE reasoning gets shorter":
+  here it got much shorter and accuracy did not drop. Together with
+  `q4_mean@0.1` (accuracy -21 points with no length change), length and
+  accuracy come apart in both directions.
+- Fits the "Q3 is a wrap-up push" reading from the probe (larger Q3 raises
+  the urge to conclude) and the opposite sign of `q3_zero@0.25` (+27-38%).
+- Limits: one seed for `grow@0.5`; GSM8K is easy for this model, so the
+  re-checking may be redundant here and matter on harder problems; the growth
+  direction is the opposite of Goodfire's ablation, so this supports "Q3 size
+  controls reasoning length" but not their specific collapse.
+
+**Queue (one job at a time).** Next: `grow@0.25` pair seed 0 (replication);
+then `grow@1.0` pair seed 1 (does the dose-response continue, and where does
+accuracy start to fall?).
