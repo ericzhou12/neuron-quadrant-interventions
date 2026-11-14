@@ -516,5 +516,33 @@
     "mmlu_prompt_version": 4,
     "passes_gate": false,
     "gate_reason": "WikiText loss +10.5% > 10.0%; MMLU drop 0.053 > 0.05"
+  },
+  "q3_grow@0.75": {
+    "kl": 0.36196507846607884,
+    "loss_clean": 3.31628615435432,
+    "loss_intervened": 3.4525297576305913,
+    "loss_increase_pct": 4.108318671396383,
+    "mmlu_accuracy": 0.47333333333333333,
+    "mmlu_letter_mass": 0.9963561326244674,
+    "mmlu_direct_rate": 0.52,
+    "mmlu_direct_accuracy": 0.29333333333333333,
+    "mmlu_n": 300,
+    "mmlu_prompt_version": 4,
+    "passes_gate": true,
+    "gate_reason": "ok"
+  },
+  "q4_grow@0.75": {
+    "kl": 0.3411847843843348,
+    "loss_clean": 3.31628615435432,
+    "loss_intervened": 3.4638443292356005,
+    "loss_increase_pct": 4.449500676759599,
+    "mmlu_accuracy": 0.5066666666666667,
+    "mmlu_letter_mass": 0.9992851084470749,
+    "mmlu_direct_rate": 0.7533333333333333,
+    "mmlu_direct_accuracy": 0.37333333333333335,
+    "mmlu_n": 300,
+    "mmlu_prompt_version": 4,
+    "passes_gate": true,
+    "gate_reason": "ok"
   }
 }

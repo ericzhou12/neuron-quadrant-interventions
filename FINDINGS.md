@@ -666,6 +666,41 @@ This is the most stable effect in the project so far.
 agreement. The usable range for the grow knob on this model therefore ends
 somewhere between +50% (loss +1.1%) and +100%.
 
-**Queue (one job at a time).** Next: `grow@0.75` pair seed 1 (largest dose
-likely to pass the gate); then the `shrink@0.5` pair to fill in the
-lengthening side of the same dose-response curve.
+**At `grow@0.75` reasoning shortens further and accuracy now falls, but the
+fall is not well explained by the shortening (2026-11-14, seed 1, n=200).**
+
+| edit | accuracy (intact 0.840) lost/gained | median thinking | length ratio [95% CI] | solve / check ratio | WikiText loss | MMLU (intact 0.503) |
+|---|---|---|---|---|---|---|
+| `q3_grow@0.25` | 0.835  8/7  |   962 | 0.80 [0.76, 0.86] | 0.89 / 0.74 | +0.2% | 0.517 |
+| `q3_grow@0.5`  | 0.855  9/12 |   690 | 0.55 [0.51, 0.61] | 0.75 / 0.43 | +1.1% | 0.507 |
+| `q3_grow@0.75` | 0.695 40/11 |   475 | 0.40 [0.36, 0.43] | 0.60 / 0.30 | +4.1% | 0.473 |
+| `q4_grow@0.25` | 0.820 12/8  | 1,226 | 0.93 [0.83, 0.99] | 0.90 / 0.89 | -0.1% | 0.513 |
+| `q4_grow@0.5`  | 0.825 10/7  | 1,090 | 0.86 [0.78, 0.92] | 0.85 / 0.80 | +1.5% | 0.520 |
+| `q4_grow@0.75` | 0.750 26/8  | 1,092 | 0.82 [0.75, 0.88] | 0.75 / 0.79 | +4.4% | 0.507 |
+
+Q3 vs Q4 on the same problems at `grow@0.75`: length ratio 0.48 [0.43, 0.54].
+
+- Length: the Q3 dose-response continues smoothly (0.80, 0.55, 0.40) while Q4
+  flattens (0.93, 0.86, 0.82). The Q3-specific shortening keeps growing.
+- Accuracy: both fall at this dose. Q3 -14.5 points (McNemar p = 0.0001),
+  Q4 -9 points (p = 0.003). Q3 vs Q4 directly: 28 vs 17 discordant problems,
+  p = 0.14, so the extra Q3 loss is NOT established.
+- Is the Q3 loss caused by the shortening? Three reasons to doubt it:
+  1. Q4 loses 9 points while shortening only 18%, so most of the drop at this
+     dose looks like general harm to multi-step reasoning (the gate measures,
+     +4%, MMLU, do not capture it, as with `q4_mean@0.1`).
+  2. Within `q3_grow@0.75`, the problems it loses were shortened LESS than the
+     ones it keeps (median length ratio 0.55 for the 37 lost-but-finished vs
+     0.38 for the 128 kept).
+  3. At `q3_grow@0.5` reasoning was already 45% shorter with no accuracy cost.
+- Reading the lost traces: confident wrong set-ups, checked briefly and
+  accepted ("16 - 3 = 13 ... Yes, that seems correct", ignoring the muffins).
+  The loss is concentrated in mid-difficulty problems (middle third by intact
+  reasoning length: 0.95 -> 0.67 for Q3, 0.74 for Q4).
+- These are correlational. The direct test is forced continuation: make
+  `q3_grow@0.75` keep thinking to the intact length and see whether accuracy
+  returns, against the intact model forced the same number of times.
+
+**Queue (one job at a time).** Next: `q3_grow@0.75` with forced continuation
+to the intact length (seed 1), then the intact model forced the same number
+of times (control); then the `shrink@0.5` pair.
