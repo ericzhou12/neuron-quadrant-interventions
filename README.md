@@ -8,10 +8,14 @@ mixture-of-experts model, Qwen 3.6 35B-A3B.
 
 Work in progress. Results so far, with their caveats, are in
 [FINDINGS.md](FINDINGS.md); figures are in
-`results/q3__Qwen__Qwen3-1.7B/figures/`. Short version (Qwen3-1.7B, partial
-edits only, one to two seeds): removing part of Q3 lengthened reasoning rather
-than shortening it, with no accuracy change. A direct replication of
-Goodfire's full ablation is still running, so treat nothing here as final.
+`results/q3__Qwen__Qwen3-1.7B/figures/`. Short version (Qwen3-1.7B, GSM8K, one to
+two seeds): the size of the Q3 leaks works like a dial for reasoning length.
+Scaling them from x0.5 to x1.75 moves thinking length from about 2.1x to 0.4x
+of normal, more strongly than the matched Q4 control. Accuracy does not track
+length: reasoning 45% shorter costs nothing, and where accuracy does fall,
+forcing the model to think longer does not bring it back. Goodfire's full
+ablation breaks this model (accuracy 0), so their collapse is not reproduced
+in a working model. One model and one easy task; treat it as preliminary.
 
 ## Layout
 
