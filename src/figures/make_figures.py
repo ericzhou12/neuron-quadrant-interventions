@@ -42,12 +42,12 @@ DPI = 160
 
 # Palette (validated categorical slots 1, 2 and 7 of the dataviz reference palette).
 Q3_COL = "#2a78d6"
-Q4_COL = "#eb6834"
+Q4_COL = "#e2703a"
 OTHER_COL = "#6250d6"
 INTACT_COL = "#8a8985"
 INK = "#0b0b0b"
 INK2 = "#52514e"
-GRID = "#e4e3df"
+GRID = "#e6e5e1"
 
 FILL_ORDER = ["qmean", "resample", "const", "pool", "shrink", "grow", "zero", "mean"]
 FILL_DESC = {
@@ -58,31 +58,11 @@ FILL_DESC = {
     "zero": "zero\nremoved\nentirely",
 }
 
-plt.rcParams.update({
-    "font.size": 9.5,
-    "axes.titlesize": 10.5,
-    "axes.titleweight": "bold",
-    "axes.titlelocation": "left",
-    "axes.labelsize": 9.5,
-    "axes.labelcolor": INK2,
-    "axes.edgecolor": "#b9b8b3",
-    "axes.linewidth": 0.8,
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "axes.grid": True,
-    "grid.color": GRID,
-    "grid.linewidth": 0.7,
-    "axes.axisbelow": True,
-    "xtick.color": INK2,
-    "ytick.color": INK2,
-    "xtick.labelsize": 8.5,
-    "ytick.labelsize": 8.5,
-    "legend.frameon": False,
-    "legend.fontsize": 8.5,
-    "figure.facecolor": "white",
-    "axes.facecolor": "white",
-    "savefig.facecolor": "white",
-})
+import style  # noqa: E402  (shared look: see style.py)
+
+style.apply()
+plt.rcParams.update({"font.size": 9.5, "axes.titlesize": 10.5, "xtick.labelsize": 8.5,
+                     "ytick.labelsize": 8.5, "legend.fontsize": 8.5, "lines.linewidth": 2.0})
 
 
 # ----------------------------------------------------------------------------- helpers
@@ -215,7 +195,7 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
             if is_rate:
                 se = np.sqrt(ys * (1 - ys) / n)
                 ax.fill_between(xs, ys - se, ys + se, color=col, alpha=0.16, lw=0)
-            ax.plot(xs, ys, color=col, lw=2, marker="o", ms=5.5, mec="white", mew=1.2, label=lab, zorder=3)
+            ax.plot(xs, ys, color=col, lw=2, marker="o", ms=5.5, mec=style.SURFACE, mew=1.2, label=lab, zorder=3)
             ends.append((xs[-1], ys[-1], q.upper(), col))
         # Direct labels at line ends, nudged apart if they collide.
         lo, hi = ax.get_ylim()
@@ -285,7 +265,7 @@ def fig2_putback_ladder(folder: Path, out_dir: Path):
                     continue
                 v = r["loss_increase_pct"]
                 ax.bar(x[i] + off, v, bw, color=col, bottom=0.1 if False else None,
-                       label=None, edgecolor="white", linewidth=0)
+                       label=None, edgecolor=style.SURFACE, linewidth=0)
                 ax.text(x[i] + off, v * 1.08, f"{v:.1f}" if v < 10 else f"{v:.0f}", ha="center", va="bottom",
                         fontsize=7.8, color=INK)
         ax.set_yscale("log")
@@ -359,26 +339,25 @@ def fig3_generation(folder: Path, out_dir: Path):
 
     # (a) survival curves
     ax = fig.add_subplot(gs[0, :])
-    ax.set_title("a  Share of problems still thinking after t tokens")
-    linestyles = ["-", "--", "-.", ":"]
-    fam_count = {}
+    ax.set_title("a  Share of problems still thinking after t tokens (leaks halved, dashed, vs 50% larger, solid)")
+    # Only the clearest contrast is drawn here (leaks halved vs made 50% larger);
+    # panels b-d list every edit.
+    SHOWN = ["none", "q3_shrink@0.5", "q4_shrink@0.5", "q3_grow@0.5", "q4_grow@0.5"]
+    shown = [c for c in SHOWN if c in rows] or rows
 
-    def style(c):
+    def line_style(c):
         if c == "none":
             return dict(color=INTACT_COL, ls="-", lw=2.6)
-        col = quad_colour(c)
-        k = fam_count.setdefault(col, 0)
-        fam_count[col] = k + 1
-        return dict(color=col, ls=linestyles[k % len(linestyles)], lw=1.8)
+        return dict(color=quad_colour(c), ls="--" if "shrink" in c else "-", lw=2.2)
 
-    for c in rows:
+    for c in shown:
         keys = all_keys if c == "none" else paired[c]
         recs = base if c == "none" else variants[c]
         t = np.sort(np.array([max(recs[k]["thinking_tokens"], 1) for k in keys]))
         alive = 1.0 - np.arange(1, len(t) + 1) / len(t)
         xs = np.concatenate([[1], np.repeat(t, 2)])
         ys = np.concatenate([[1.0], np.column_stack([np.r_[1.0, alive[:-1]], alive]).ravel()])
-        ax.plot(xs, ys, label=f"{c} (n={len(keys)})", **style(c))
+        ax.plot(xs, ys, label=f"{c} (n={len(keys)})", **line_style(c))
     ax.set_xscale("log")
     ax.set_xlim(30, 6000)
     ax.set_ylim(-0.02, 1.02)
@@ -387,7 +366,7 @@ def fig3_generation(folder: Path, out_dir: Path):
     ax.set_xlabel("Thinking tokens so far (log scale)")
     ax.set_ylabel("Share still thinking")
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    ax.legend(loc="lower left", ncol=max(1, math.ceil(len(rows) / 4)), fontsize=8)
+    ax.legend(loc="lower left", ncol=1, fontsize=8.5)
 
     y = np.arange(len(rows))[::-1]
     axb, axc, axd = (fig.add_subplot(gs[1, i]) for i in range(3))
@@ -404,7 +383,7 @@ def fig3_generation(folder: Path, out_dir: Path):
         lo, hi = bootstrap(lambda ix: np.median(ratio[ix]), len(ratio))
         col = quad_colour(c)
         axb.plot([lo, hi], [yi, yi], color=col, lw=2, solid_capstyle="round")
-        axb.plot(med, yi, "o", color=col, ms=7, mec="white", mew=1.2)
+        axb.plot(med, yi, "o", color=col, ms=7, mec=style.SURFACE, mew=1.2)
         axb.annotate(f"{med:.2f}", (hi, yi), xytext=(4, 0), textcoords="offset points", va="center",
                      fontsize=7.5, color=INK2)
     axb.axvline(1, color=INTACT_COL, lw=1.1, ls="--")
@@ -433,7 +412,7 @@ def fig3_generation(folder: Path, out_dir: Path):
             p, lo, hi = wilson(k, len(keys))
             col = quad_colour(c)
             axx.plot([lo, hi], [yi, yi], color=col, lw=2, solid_capstyle="round")
-            axx.plot(p, yi, "o", color=col, ms=7, mec="white", mew=1.2)
+            axx.plot(p, yi, "o", color=col, ms=7, mec=style.SURFACE, mew=1.2)
             if c == "none":
                 axx.axvline(p, color=INTACT_COL, lw=1.1, ls="--")
         axx.set_xlabel(xlabel)
@@ -508,7 +487,7 @@ def fig4_probe(folder: Path, out_dir: Path):
             col = quad_colour(c)
             lo, hi = s[metric + "_ci"]
             ax.errorbar(s["kl"], s[metric], yerr=[[s[metric] - lo], [hi - s[metric]]], fmt="o", color=col,
-                        ms=7, mec="white", mew=1.2, elinewidth=1.6, capsize=0, zorder=3)
+                        ms=7, mec=style.SURFACE, mew=1.2, elinewidth=1.6, capsize=0, zorder=3)
             ax.annotate(c, (s["kl"], s[metric]), xytext=(5, 4), textcoords="offset points", fontsize=7.3,
                         color=INK2)
         ax.axhline(1, color=INTACT_COL, lw=1.1, ls="--")
@@ -537,7 +516,7 @@ def fig4_probe(folder: Path, out_dir: Path):
         s = stats[c]
         lo, hi = s["dlogp_ci"]
         col = quad_colour(c)
-        ax.barh(yi, s["dlogp"], 0.62, color=col, edgecolor="white", linewidth=0)
+        ax.barh(yi, s["dlogp"], 0.62, color=col, edgecolor=style.SURFACE, linewidth=0)
         ax.plot([lo, hi], [yi, yi], color=INK, lw=1.2)
     ax.axvline(0, color=INTACT_COL, lw=1.1)
     ax.set_yticks(y)
@@ -608,7 +587,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
             o = np.argsort(xs)
             xs, ys, los, his = (np.array(v)[o] for v in (xs, ys, los, his))
             ax.plot(xs + off[q], ys, color=col, lw=2, zorder=3)
-            ax.errorbar(xs + off[q], ys, yerr=[ys - los, his - ys], fmt="o", color=col, ms=7, mec="white", mew=1.2,
+            ax.errorbar(xs + off[q], ys, yerr=[ys - los, his - ys], fmt="o", color=col, ms=7, mec=style.SURFACE, mew=1.2,
                         elinewidth=1.6, capsize=0, zorder=4)
             ends.append((xs[-1] + off[q], ys[-1], q.upper(), col))
             for s, x in GAIN_STEPS:
@@ -618,7 +597,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
                 m, (lo, hi) = r[metric]["mean"], r[metric]["ci"]
                 xx = x + 3 * off[q]
                 ax.plot([xx, xx], [lo, hi], color=col, lw=1.0, alpha=0.6, zorder=2)
-                ax.plot(xx, m, "o", mfc="white", mec=col, mew=1.6, ms=6.5, zorder=5)
+                ax.plot(xx, m, "o", mfc=style.SURFACE, mec=col, mew=1.6, ms=6.5, zorder=5)
         lo, hi = ax.get_ylim()
         gap = 0.07 * (hi - lo)
         ends.sort(key=lambda e: e[1])
@@ -636,9 +615,9 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
         _ratio_axis(ax)
         ax.text(0.41, 0, "intact", fontsize=7.8, color=INTACT_COL, va="bottom")
     from matplotlib.lines import Line2D
-    handles = [Line2D([], [], color=Q3_COL, lw=2, marker="o", ms=7, mec="white", label="Q3 leaks scaled"),
-               Line2D([], [], color=Q4_COL, lw=2, marker="o", ms=7, mec="white", label="Q4 leaks scaled (matched control)"),
-               Line2D([], [], ls="", marker="o", ms=6.5, mfc="white", mec=INK2, mew=1.6,
+    handles = [Line2D([], [], color=Q3_COL, lw=2, marker="o", ms=7, mec=style.SURFACE, label="Q3 leaks scaled"),
+               Line2D([], [], color=Q4_COL, lw=2, marker="o", ms=7, mec=style.SURFACE, label="Q4 leaks scaled (matched control)"),
+               Line2D([], [], ls="", marker="o", ms=6.5, mfc=style.SURFACE, mec=INK2, mew=1.6,
                       label="independent traces (seed 1)"),
                Line2D([], [], color=INTACT_COL, ls="--", lw=1.1, label="intact model")]
     fig.legend(handles=handles, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 0.0))
@@ -709,7 +688,7 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
         for i in np.flatnonzero(mid):
             pts.append((t[i], yi + rng.uniform(-0.3, 0.3), ok[i]))
         for x, yy, c in pts:
-            ax.plot(x, yy, "o", ms=5.2, mec=col, mew=1.1, mfc=col if c else "white", zorder=3)
+            ax.plot(x, yy, "o", ms=5.2, mec=col, mew=1.1, mfc=col if c else style.SURFACE, zorder=3)
         for mask, x, ha in ((zero, -30 - dx * math.ceil(zero.sum() / per_col) + dx / 2 - 20, "right"),
                             (cap, CAP + 30 + dx * math.ceil(cap.sum() / per_col) - dx / 2 + 20, "left")):
             if mask.sum():
