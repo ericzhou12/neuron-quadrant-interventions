@@ -33,6 +33,7 @@ relative to where you run from). Scripts find each other's folders on their own.
 | `analyze_q3.py`, `compare_runs.py`, `analyze_phases.py` | paired statistics; solve-phase vs check-phase split |
 | **`src/probe/`** | the teacher-forced probe (no sampling) |
 | `probe_stop.py` | replays the intact model's reasoning under each edit and measures the urge to say "Wait" or to conclude |
+| `leak_lens.py` | the average leak as a direction: logit lens, Jacobian lens and steering with a constant push |
 | `analyze_probe.py`, `analyze_timing.py` | probe statistics; leak activity around "Wait" and the final answer |
 | **`src/figures/`** | `make_figures.py`, `plot_q3.py`, `fig_gain_dose.py` (leak-size dose-response), `style.py` (shared look) |
 | **`src/sparsity_sweep/`** | earlier top-k sparsity sweep: `run_sweep.py`, `plot_results.py` |

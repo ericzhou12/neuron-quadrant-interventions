@@ -877,6 +877,60 @@ continuation word, and "Wait" alone for comparison; hollow points are the seed-0
 Files: `probe_stop__cont.jsonl`, `probe_stop__contseed0.jsonl`,
 `probe_summary__cont*.json/.txt`.
 
+## The leak as a direction: a constant push reproduces the scaling edits (2026-11-15)
+
+`src/probe/leak_lens.py`, 24 intact seed-1 traces (thinking <= 1,200 tokens).
+For each layer the average Q3 (or Q4) contribution per token is one fixed
+vector, "the push" = output weights x mean activation from that quadrant,
+measured on the reasoning text itself. Three looks at it:
+
+**Steering (the constant-vector test from the plan, in probe form).** Add
+alpha x push at every layer and every token; measure the probe's two urges
+(log ratio vs intact). Next to it, the matching scaling edit from the 50-trace
+probe (`grow@0.5` multiplies every real, token-specific leak by 1.5):
+
+| | constant push: end / continue | scaling edit: end / continue |
+|---|---|---|
+| Q3 -0.5  (x0.5)  | -2.01 / +0.32 | -0.95 / +0.38 |
+| Q3 -0.25 (x0.75) | -1.05 / +0.15 | -0.55 / +0.14 |
+| Q3 +0.25 (x1.25) | +0.86 / -0.12 | +0.53 / -0.12 |
+| Q3 +0.5  (x1.5)  | +1.42 / -0.23 | +1.27 / -0.24 |
+| Q3 +0.75 (x1.75) | +1.57 / -0.33 | +1.18 / -0.31 |
+| Q4 -0.5  | +1.17 / +0.29 | +1.38 / +0.27 |
+| Q4 -0.25 | +0.45 / +0.10 | +0.68 / +0.07 |
+| Q4 +0.25 | -0.45 / -0.06 | -0.87 / -0.02 |
+| Q4 +0.5  | -0.96 / -0.09 | -1.64 / +0.00 |
+| Q4 +0.75 | -1.31 / -0.10 | -1.83 / +0.01 |
+
+- A single fixed vector per layer, the same on every token, reproduces the
+  sign of every scaling effect and most of its size: the urge to keep going
+  almost exactly for Q3, the urge to end to within roughly a factor of two.
+  So for these two urges the leaks act mainly as a constant push (H3); the
+  token-by-token pattern is not needed.
+- Not exact: removing the Q3 push overshoots the urge to end (-2.01 vs -0.95)
+  and the Q4 push undershoots it. The two columns also use different trace
+  sets (24 short vs 50), so only rough agreement can be claimed.
+- This is the probe, not generation: it shows the push moves the local urges,
+  not yet that adding it shortens generated reasoning. And Goodfire report
+  that per-neuron mean fill mostly failed to restore reasoning in their model
+  (4 of 15), so "constant push is enough" may not transfer.
+
+**Jacobian lens** (gradient of each urge with respect to the residual stream
+at each layer, dotted with the push; a first-order prediction per unit push):
+Q3 end +4.11 (early third +2.62, middle +1.48, late +0.01), continue -0.57;
+Q4 end -1.42, continue -0.33. It predicts the steering results well for small
+pushes (e.g. Q3 -0.25: predicted -1.03, measured -1.05) and overshoots as the
+push grows. The effect on ending comes from the early and middle layers,
+none from the late third, matching the earlier layer-restricted probe.
+
+**Direct logit lens** (push x unembedding): uninformative. The most raised
+and lowered tokens are unrelated fragments and the watched tokens sit within
+about 2 standard deviations of the vocabulary average (largest: "Wait" +2.0
+for Q3). The push is read by later layers, not written toward particular words.
+
+So the direction is characterised by what it does, not labelled by meaning.
+Files: `leak_lens.json`, `leak_lens.txt`.
+
 **Stopped (2026-11-14, at the owner's request): the queue is finished and
 nothing is running.** Not started: Qwen3-0.6B / 4B, a harder task than GSM8K,
 thinking-off runs for the gain pairs, seed-0 replication of x0.5 / x1.5 / x1.75.

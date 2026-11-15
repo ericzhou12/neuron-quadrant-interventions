@@ -1,0 +1,75 @@
+Leak push lenses, Qwen/Qwen3-1.7B, 24 intact traces (seed 1)
+
+Size and alignment of the average push per layer (norm Q3, norm Q4, cosine between them):
+  layer  0  1.492  1.435  -0.28
+  layer  1  2.907  3.248  +0.35
+  layer  2  2.680  2.785  -0.29
+  layer  3  3.518  4.267  -0.08
+  layer  4  4.210  4.423  -0.35
+  layer  5  4.231  4.297  -0.52
+  layer  6  5.001  4.817  -0.63
+  layer  7  5.491  5.495  -0.57
+  layer  8  5.893  5.635  -0.57
+  layer  9  6.827  7.018  -0.32
+  layer 10  10.635  10.628  +0.43
+  layer 11  7.307  7.464  -0.27
+  layer 12  7.455  7.179  -0.23
+  layer 13  7.352  7.816  -0.15
+  layer 14  7.625  8.150  -0.12
+  layer 15  10.949  10.788  +0.16
+  layer 16  15.284  14.603  +0.33
+  layer 17  19.896  21.445  +0.29
+  layer 18  26.637  24.657  +0.37
+  layer 19  25.405  26.023  +0.22
+  layer 20  26.278  25.059  +0.14
+  layer 21  21.964  20.275  -0.12
+  layer 22  20.041  20.225  -0.18
+  layer 23  20.078  18.278  -0.21
+  layer 24  19.713  20.520  -0.24
+  layer 25  24.708  24.348  +0.06
+  layer 26  34.651  36.045  +0.31
+  layer 27  38.382  41.707  +0.58
+
+1. Direct logit lens (z-score of each watched token among the whole vocabulary):
+  q3_early  ** (start Final Answer) -0.9  </think> +0.2  Wait +1.4  But +1.0  Alternatively +1.2  Hmm -0.1  maybe -1.7  check +0.5
+            raises: ['maint', 'myp', 'multipart', ' cush', '承', 'erral', '履', 'ا�', ' отно', 'asc', '高度', 'orida']
+            lowers: ['esti', '第一节', 'orny', '第二大', '周二', '万余元', 'chal', '[]{"', ' Orlando', 'øre', 'asti', 'cci']
+  q3_mid    ** (start Final Answer) +0.2  </think> +0.0  Wait +1.1  But -0.6  Alternatively -0.2  Hmm -0.8  maybe -0.7  check +0.1
+            raises: ['_Arg', '�', '可想而', '어야', '旮', 'òa', ' skys', '埼', ' fotoğ', ' Tic', '拮', 'yg']
+            lowers: ['所说的', 'abler', 'ces', 'UpDown', 'ลบ', '章', '_dn', '联社', '之家', 'apus', 'assen', 'ivo']
+  q3_late   ** (start Final Answer) -0.4  </think> +0.4  Wait +1.7  But -0.7  Alternatively -0.7  Hmm +0.2  maybe -1.3  check -0.8
+            raises: ['AndWait', 'ationToken', 'ellaneous', 'ISTRATION', 'venge', 'ValueHandling', 'riages', '.cgi', 'utherland', 'vrolet', 'cloak', 'AndPassword']
+            lowers: ['去了', 'ako', 'ains', 'apo', 'ab', "'e", 'Cop', '�', ' flew', 'adel', 'MJ', ' ng']
+  q3_all    ** (start Final Answer) -0.3  </think> +0.4  Wait +2.0  But -0.8  Alternatively -0.5  Hmm -0.2  maybe -1.5  check -0.5
+            raises: ['AndWait', 'ValueHandling', '/octet', '\\modules', '.exports', 'ationToken', 'ISTRATION', ' behalf', '槁', 'ibal', '�', 'ropol']
+            lowers: ['ako', 'apo', '去了', 'ains', '�', 'dre', 'én', '写的', 'imo', 'ab', 'ador', ' ,,']
+  q4_early  ** (start Final Answer) +0.7  </think> -0.1  Wait +1.5  But +0.5  Alternatively -0.0  Hmm -2.0  maybe -1.6  check -0.2
+            raises: [' últ', ' �', ' Clo', ' التنفي', '\r', ' näch', '.Cont', ' ANSW', 'ศ', '/en', '.Shapes', '柘']
+            lowers: ['想起', ' ssid', '给你们', '我记得', '少不了', '全县', '时任', ' summons', '女主角', '都知道', 'bruar', '听说过']
+  q4_mid    ** (start Final Answer) -1.6  </think> +0.1  Wait +0.9  But -0.8  Alternatively +0.5  Hmm -0.4  maybe -0.9  check -0.7
+            raises: ['Veter', '骶', '-<?', '吲', '突如其', '必不可', '主营业', '匍', 'Mc', '<<<<<<<', 'brig', '个工作']
+            lowers: ['abcd', '城区', 'abler', 'ché', 'ii', 'elt', 'opies', 'iture', 'apus', '森林公园', 'alin', 'ador']
+  q4_late   ** (start Final Answer) -0.3  </think> +0.3  Wait -0.7  But -0.2  Alternatively -0.3  Hmm +0.4  maybe +0.2  check -0.6
+            raises: [' üzere', '\\<^', 'ValueHandling', 'lassian', '/XMLSchema', '/stdc', 'ADVERTISEMENT', '_tac', 'AndServe', 'errupt', '.gdx', 'SupportFragmentManager']
+            lowers: ['�', 'ob', 'observe', 'LB', 'Mer', 'obs', 'OB', 'KI', 'ats', 'ALL', '�', 'all']
+  q4_all    ** (start Final Answer) -0.9  </think> +0.3  Wait +0.0  But -0.5  Alternatively -0.0  Hmm -0.1  maybe -0.4  check -0.8
+            raises: ['ValueHandling', '<<<<<<<', '/stdc', '\\<^', '\tdefer', '.gdx', '_tac', 'SupportFragmentManager', '骶', 'MeshPro', ' QLatin', '\\modules']
+            lowers: ['所说的', 'uin', 'ALL', 'all', '均由', 'usi', '均为', '其他人', 'uso', '级别', '物', '情']
+
+2. Jacobian lens: predicted change in each urge per unit of push (alpha = 1), by third of the stack and total:
+  q3_end       early +2.62  mid +1.48  late +0.01  total +4.11
+  q3_continue  early -0.09  mid -0.49  late +0.01  total -0.57
+  q4_end       early -1.95  mid +0.79  late -0.26  total -1.42
+  q4_continue  early -0.21  mid -0.13  late +0.01  total -0.33
+
+3. Steering: measured change when alpha x push is really added (and the Jacobian's straight-line prediction):
+  q3@-0.50  end -2.01 (linear -2.05)   continue +0.32 (linear +0.28)
+  q3@-0.25  end -1.05 (linear -1.03)   continue +0.15 (linear +0.14)
+  q3@+0.25  end +0.86 (linear +1.03)   continue -0.12 (linear -0.14)
+  q3@+0.50  end +1.42 (linear +2.05)   continue -0.23 (linear -0.28)
+  q3@+0.75  end +1.57 (linear +3.08)   continue -0.33 (linear -0.43)
+  q4@-0.50  end +1.17 (linear +0.71)   continue +0.29 (linear +0.16)
+  q4@-0.25  end +0.45 (linear +0.35)   continue +0.10 (linear +0.08)
+  q4@+0.25  end -0.45 (linear -0.35)   continue -0.06 (linear -0.08)
+  q4@+0.50  end -0.96 (linear -0.71)   continue -0.09 (linear -0.16)
+  q4@+0.75  end -1.31 (linear -1.06)   continue -0.10 (linear -0.24)
