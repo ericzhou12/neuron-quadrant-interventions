@@ -871,7 +871,9 @@ What changes and what stands:
   shows Q4 slightly SHORTER (0.82-0.93). So the earlier tidy account ("two
   mechanisms that cancel for Q4") no longer works for the grow direction and
   the mild Q4 shortening is unexplained by the probe.
-Figures: `figures/fig8_probe_continuation_words.png` (and `__contseed0`).
+Figure: `figures/fig5_probe_conclude.png`, rebuilt on these runs (urge to end by either route, any
+continuation word, and "Wait" alone for comparison; hollow points are the seed-0 traces).
+`fig4_probe.png` still shows the earlier `</think>` / "Wait"-only probe and says so in its caption.
 Files: `probe_stop__cont.jsonl`, `probe_stop__contseed0.jsonl`,
 `probe_summary__cont*.json/.txt`.
 

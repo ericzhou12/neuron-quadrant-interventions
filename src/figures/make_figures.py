@@ -478,7 +478,9 @@ def fig4_probe(folder: Path, out_dir: Path):
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 0.85], wspace=0.32, left=0.06, right=0.985, top=0.8, bottom=0.12)
     add_header(fig, "Teacher-forced probe: does an edit raise the urge to stop thinking more than its matched control?",
                f"Qwen3-1.7B reading the intact model's own reasoning traces ({n_txt} traces, paired by trace). "
-               "Error bars = 95% bootstrap CI over traces. Points to the right did more damage.")
+               "Error bars = 95% bootstrap CI over traces. Points to the right did more damage.\nSuperseded in part: "
+               "</think> and \"Wait\" turned out to be narrow targets. See fig5 for the urge to end by either "
+               "route and a wider set of continuation words.")
 
     def scatter(ax, metric, title, ylabel):
         ax.set_title(title)
@@ -535,7 +537,7 @@ def fig4_probe(folder: Path, out_dir: Path):
 # ----------------------------------------------------------------------------- fig 5
 
 GAIN_STEPS = [("shrink@0.5", 0.5), ("shrink@0.25", 0.75), ("grow@0.25", 1.25), ("grow@0.5", 1.5)]
-RATIO_TICKS = [0.2, 0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4, 5]
+RATIO_TICKS = [0.1, 0.15, 0.2, 0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4, 5, 7]
 
 
 def _ratio_axis(ax):
@@ -547,79 +549,85 @@ def _ratio_axis(ax):
 
 
 def fig5_probe_conclude(folder: Path, out_dir: Path):
+    """Leak size as a dial, seen by the probe: urge to end, urge to keep going
+    (a SET of continuation words), and "Wait" alone for comparison."""
     name = "fig5_probe_conclude.png"
-    main_p, rep_p = folder / "probe_summary__v3seed0.json", folder / "probe_summary__v2.json"
+    main_p, rep_p = folder / "probe_summary__cont.json", folder / "probe_summary__contseed0.json"
+    old = False
+    if not main_p.exists():  # fall back to the earlier probe (no continuation-word set)
+        main_p, rep_p, old = folder / "probe_summary__v3seed0.json", folder / "probe_summary__v2.json", True
     if not main_p.exists():
         return skip(name, f"no {main_p.name}")
     main = json.loads(main_p.read_text())["per_condition"]
     rep = json.loads(rep_p.read_text())["per_condition"] if rep_p.exists() else {}
-    if not any(f"q3_{s}" in main for s, _ in GAIN_STEPS):
+    steps = GAIN_STEPS + [("grow@0.75", 1.75)]
+    if not any(f"q3_{s}" in main for s, _ in steps):
         return skip(name, "no q3_shrink/grow entries in the probe summary")
-    n_main = sorted({main[f"{q}_{s}"]["n"] for q in ("q3", "q4") for s, _ in GAIN_STEPS if f"{q}_{s}" in main})
-    n_rep = sorted({rep[f"{q}_{s}"]["n"] for q in ("q3", "q4") for s, _ in GAIN_STEPS if f"{q}_{s}" in rep})
+    n_main = sorted({main[f"{q}_{s}"]["n"] for q in ("q3", "q4") for s, _ in steps if f"{q}_{s}" in main})
+    n_rep = sorted({rep[f"{q}_{s}"]["n"] for q in ("q3", "q4") for s, _ in steps if f"{q}_{s}" in rep})
+    if old:
+        panels = [("conclude", "a  Urge to conclude early", "ratio to intact (log scale)"),
+                  ("wait", 'b  Urge to say "Wait"', "ratio to intact (log scale)")]
+    else:
+        panels = [("end_either", "a  Urge to end early (either route)", "Summed probability along the trace,\nratio to intact (log scale)"),
+                  ("continue_any", "b  Urge to keep going (any of 6 word groups)", ""),
+                  ("wait", 'c  "Wait" alone (the earlier, narrower measure)', "")]
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5.3), sharex=True)
-    fig.subplots_adjust(left=0.075, right=0.955, top=0.76, bottom=0.2, wspace=0.26)
-    add_header(fig, "Turning the leak size up or down: Q3 and Q4 pull the urge to conclude in opposite directions",
-               f"Qwen3-1.7B reading the intact model's own reasoning traces (teacher-forced, n = {n_main[0]} traces, "
-               "paired by trace). Each quadrant's firings are all multiplied by x. Points = geometric-mean ratio vs "
-               "intact;\nerror bars = 95% bootstrap CI over traces. Hollow points = the x0.75 / x1.25 edits on a "
-               f"separate set of {n_rep[0] if n_rep else '?'} traces (seed 1), as a replication.")
-    panels = [("conclude", "a  Urge to conclude early",
-               "Summed P(start the final answer) before the real\nend, ratio to intact (log scale)"),
-              ("wait", "b  Urge to say \"Wait\"", "Summed P(\"Wait\") over the trace,\nratio to intact (log scale)")]
-    off = {"q3": -0.012, "q4": 0.012}
+    fig, axes = plt.subplots(1, len(panels), figsize=(5.4 * len(panels), 5.5), sharex=True)
+    fig.subplots_adjust(left=0.07, right=0.965, top=0.74, bottom=0.2, wspace=0.24)
+    add_header(fig, "Leak size as a dial: bigger Q3 leaks raise the urge to end and lower the urge to keep going",
+               f"Qwen3-1.7B reading the intact model's own reasoning (teacher-forced, {n_main[0]} traces, paired by "
+               "trace). Every firing in the quadrant is multiplied by x. Lines = mean ratio vs intact, shaded = 95% "
+               f"bootstrap interval.\nHollow points = the same edits on {n_rep[0] if n_rep else '?'} other traces "
+               "(replication). Panel a counts starting the Final Answer block or closing </think> directly. Panel b "
+               "sums Wait, But,\nAlternatively, Hmm, maybe and check/verify/confirm. Panels b and c share a scale: "
+               '"Wait" alone hides the Q3-vs-Q4 difference that the wider set shows.')
     for ax, (metric, title, ylabel) in zip(axes, panels):
         ax.set_title(title)
-        ax.axhline(0, color=INTACT_COL, lw=1.1, ls="--", zorder=1)
-        ax.axvline(1.0, color=GRID, lw=0.8, zorder=0)
+        ax.axhline(0, color=INTACT_COL, lw=1.1, ls=":", zorder=1)
         ends = []
         for q, col in (("q3", Q3_COL), ("q4", Q4_COL)):
             xs, ys, los, his = [1.0], [0.0], [0.0], [0.0]
-            for s, x in GAIN_STEPS:
-                r = main.get(f"{q}_{s}")
-                if r is None:
+            for s_, x in steps:
+                r = main.get(f"{q}_{s_}")
+                if r is None or r.get(metric) is None:
                     continue
-                xs.append(x)
-                ys.append(r[metric]["mean"])
-                los.append(r[metric]["ci"][0])
-                his.append(r[metric]["ci"][1])
+                xs.append(x); ys.append(r[metric]["mean"]); los.append(r[metric]["ci"][0]); his.append(r[metric]["ci"][1])
             o = np.argsort(xs)
             xs, ys, los, his = (np.array(v)[o] for v in (xs, ys, los, his))
-            ax.plot(xs + off[q], ys, color=col, lw=2, zorder=3)
-            ax.errorbar(xs + off[q], ys, yerr=[ys - los, his - ys], fmt="o", color=col, ms=7, mec=style.SURFACE, mew=1.2,
-                        elinewidth=1.6, capsize=0, zorder=4)
-            ends.append((xs[-1] + off[q], ys[-1], q.upper(), col))
-            for s, x in GAIN_STEPS:
-                r = rep.get(f"{q}_{s}")
-                if r is None:
+            style.line_with_band(ax, xs, ys, los, his, col, None)
+            ends.append((xs[-1], ys[-1], q.upper(), col))
+            for s_, x in steps:
+                r = rep.get(f"{q}_{s_}")
+                if r is None or r.get(metric) is None:
                     continue
-                m, (lo, hi) = r[metric]["mean"], r[metric]["ci"]
-                xx = x + 3 * off[q]
-                ax.plot([xx, xx], [lo, hi], color=col, lw=1.0, alpha=0.6, zorder=2)
-                ax.plot(xx, m, "o", mfc=style.SURFACE, mec=col, mew=1.6, ms=6.5, zorder=5)
+                ax.plot(x, r[metric]["mean"], "o", mfc=style.SURFACE, mec=col, mew=1.6, ms=7.5, zorder=5)
+        ends.sort(key=lambda e: e[1])
+        ax.set_xlim(0.4, 1.9)
+        ax.set_xticks([0.5, 0.75, 1.0, 1.25, 1.5, 1.75])
+        ax.set_xticklabels(["×0.5", "×0.75", "×1", "×1.25", "×1.5", "×1.75"])
+        ax.set_xlabel("Leak size (multiplier on every firing)")
+        ax.set_ylabel(ylabel)
+        ax._ends = ends
+    if not old:  # same scale for the two continuation panels
+        lo = min(axes[1].get_ylim()[0], axes[2].get_ylim()[0]); hi = max(axes[1].get_ylim()[1], axes[2].get_ylim()[1])
+        axes[1].set_ylim(lo, hi); axes[2].set_ylim(lo, hi)
+    for ax in axes:
         lo, hi = ax.get_ylim()
         gap = 0.07 * (hi - lo)
-        ends.sort(key=lambda e: e[1])
+        ends = ax._ends
         if len(ends) == 2 and ends[1][1] - ends[0][1] < gap:
             mid = (ends[0][1] + ends[1][1]) / 2
-            ends = [(*ends[0][:1], mid - gap / 2, *ends[0][2:]), (*ends[1][:1], mid + gap / 2, *ends[1][2:])]
+            ends = [(ends[0][0], mid - gap / 2, *ends[0][2:]), (ends[1][0], mid + gap / 2, *ends[1][2:])]
         for x, y, lab, col in ends:
-            ax.annotate(lab, (x, y), xytext=(9, 0), textcoords="offset points", va="center", fontsize=9.5,
-                        fontweight="bold", color=col)
-        ax.set_xlim(0.4, 1.62)
-        ax.set_xticks([0.5, 0.75, 1.0, 1.25, 1.5])
-        ax.set_xticklabels(["×0.5", "×0.75", "×1\nintact", "×1.25", "×1.5"])
-        ax.set_xlabel("Size of that quadrant's leaks (multiplier on every firing)")
-        ax.set_ylabel(ylabel)
+            ax.annotate(lab, (x, y), xytext=(11, 0), textcoords="offset points", va="center", fontsize=10.5, color=col)
         _ratio_axis(ax)
-        ax.text(0.41, 0, "intact", fontsize=7.8, color=INTACT_COL, va="bottom")
     from matplotlib.lines import Line2D
-    handles = [Line2D([], [], color=Q3_COL, lw=2, marker="o", ms=7, mec=style.SURFACE, label="Q3 leaks scaled"),
-               Line2D([], [], color=Q4_COL, lw=2, marker="o", ms=7, mec=style.SURFACE, label="Q4 leaks scaled (matched control)"),
-               Line2D([], [], ls="", marker="o", ms=6.5, mfc=style.SURFACE, mec=INK2, mew=1.6,
-                      label="independent traces (seed 1)"),
-               Line2D([], [], color=INTACT_COL, ls="--", lw=1.1, label="intact model")]
+    handles = [Line2D([], [], color=Q3_COL, lw=2.4, marker="o", ms=6, label="Q3 leaks scaled"),
+               Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 leaks scaled (matched control)"),
+               Line2D([], [], ls="", marker="o", ms=7.5, mfc=style.SURFACE, mec=INK2, mew=1.6,
+                      label="replication on other traces"),
+               Line2D([], [], color=INTACT_COL, ls=":", lw=1.1, label="intact model")]
     fig.legend(handles=handles, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 0.0))
     save(fig, out_dir, name)
 
