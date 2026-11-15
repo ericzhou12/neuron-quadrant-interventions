@@ -146,6 +146,20 @@ def main():
     model = AutoModelForCausalLM.from_pretrained(args.model, dtype=getattr(torch, args.dtype)).to(device).eval()
     think_end_id = tok.convert_tokens_to_ids("</think>")
     wait_ids = sorted({tok(s, add_special_tokens=False)["input_ids"][0] for s in ("Wait", " Wait")})
+    # "Wait" is only about a sixth of the model's backtracking phrases, so also track a
+    # wider set of continuation / second-guessing words (each is a single token here).
+    MARKERS = {"wait": ["Wait"], "but": ["But"], "alternatively": ["Alternatively"], "hmm": ["Hmm"],
+               "maybe": ["Maybe", "maybe"], "check": ["check", "verify", "confirm"]}
+    marker_ids = {}
+    for name, words in MARKERS.items():
+        ids = set()
+        for w in words:
+            for v in (w, " " + w):
+                enc = tok(v, add_special_tokens=False)["input_ids"]
+                assert len(enc) == 1, f"{v!r} is not a single token"
+                ids.add(enc[0])
+        marker_ids[name] = sorted(ids)
+    all_marker_ids = sorted({i for ids in marker_ids.values() for i in ids})
     # The intact model nearly always ends its thinking with a "**Final Answer**" block,
     # after which </think> is almost certain. So the real decision to stop is the
     # decision to START that block: P(first token of "**Final Answer**").
@@ -208,11 +222,20 @@ def main():
                     "stop_hazard": float(p_stop[:-1].sum()),
                     "logp_stop_end": float(lp[-1, think_end_id]),
                     "wait_hazard": float(p_wait.sum()),
+                    # summed P(word) along the trace for each continuation word, and for all of them
+                    "marker_hazards": {m: float(lp[:, ids].exp().sum()) for m, ids in marker_ids.items()},
+                    "cont_hazard": float(lp[:, all_marker_ids].exp().sum()),
                     # conclude hazard: summed P(start the Final Answer block) BEFORE the model really did,
                     # and log P(start it) at the point where the intact model did start it.
                     "final_hazard": None if k_final is None else float(lp[:k_final, final_id].exp().sum()),
                     "logp_final_end": None if k_final is None else float(lp[k_final, final_id]),
                     "final_hazard_all": float(lp[:, final_id].exp().sum()),
+                    # The edited model may end its thinking WITHOUT a Final Answer block (straight to
+                    # </think>). So also record the urge to close thinking directly before the real
+                    # end, and the two routes combined ("end by either route").
+                    "close_hazard_pre": None if k_final is None else float(lp[:k_final, think_end_id].exp().sum()),
+                    "end_hazard_pre": None if k_final is None else float(
+                        lp[:k_final, [final_id, think_end_id]].exp().sum()),
                     "nll": float(-lp.gather(1, targets[:, None]).mean()),
                     "kl": float((base_lp.exp() * (base_lp - lp)).sum(-1).mean()),
                 }

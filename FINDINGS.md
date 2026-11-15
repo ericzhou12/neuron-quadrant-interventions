@@ -800,6 +800,81 @@ Limits: one model, one task that is easy for it, mostly one seed at the
 larger doses, and no dose reproduces Goodfire's full-ablation collapse in a
 working model.
 
+## Probe revisited: "Wait" was too narrow a measure (2026-11-15, raised by the owner)
+
+**"Wait" is only about a sixth of the model's backtracking phrases, and it
+hides the Q3-specific part.** Word counts in the generated traces (seed 1,
+average per trace, ratio to intact in brackets):
+
+| edit | "Wait" | "But" | "maybe" | "Alternatively" | check/verify/confirm |
+|---|---|---|---|---|---|
+| intact | 6.7 | 13.4 | 9.7 | 3.5 | 4.6 |
+| `q3_shrink@0.5` | 14.4 (2.2) | 34.3 (2.6) | 33.1 (3.4) | 7.9 (2.3) | 7.0 (1.5) |
+| `q4_shrink@0.5` | 15.2 (2.3) | 27.4 (2.0) | 25.9 (2.7) | 3.6 (1.0) | 4.3 (0.9) |
+| `q3_grow@0.5` | 5.0 (0.74) | 8.2 (0.61) | 5.0 (0.52) | 1.6 (0.46) | 2.7 (0.57) |
+| `q4_grow@0.5` | 6.0 (0.90) | 12.0 (0.90) | 7.1 (0.74) | 3.4 (0.97) | 4.4 (0.95) |
+| `q3_grow@0.75` | 5.4 (0.80) | 5.8 (0.43) | 4.3 (0.44) | 1.0 (0.28) | 1.8 (0.38) |
+| `q4_grow@0.75` | 6.1 (0.91) | 13.3 (0.99) | 8.3 (0.86) | 3.4 (0.98) | 4.5 (0.98) |
+
+(Counts are per trace, so they also reflect trace length; the probe below
+does not have that problem.)
+
+**Probe rerun with a set of continuation words and both ways of ending
+(tags `cont`: 50 seed-1 traces; `contseed0`: 50 seed-0 traces).**
+`probe_stop.py` now records the summed probability of each of Wait, But,
+Alternatively, Hmm, maybe, check/verify/confirm (all single tokens) and of
+all of them together ("any"), plus the urge to close `</think>` directly
+before the real end and "end by either route". Mean log ratio vs intact,
+seed-1 traces first, seed-0 traces second:
+
+| edit | any continuation word | "Wait" alone | end by either route | close `</think>` directly |
+|---|---|---|---|---|
+| `q3_shrink@0.5` | +0.38 / +0.34 | +0.57 / +0.52 | -0.95 / -0.83 | +0.06 / +0.05 |
+| `q4_shrink@0.5` | +0.27 / +0.25 | +0.78 / +0.70 | +1.38 / +1.35 | +0.07 / +0.06 |
+| `q3_shrink@0.25` | +0.14 / +0.13 | +0.16 / +0.18 | -0.55 / -0.46 | 0.00 / 0.00 |
+| `q4_shrink@0.25` | +0.07 / +0.08 | +0.24 / +0.23 | +0.68 / +0.78 | +0.01 / +0.01 |
+| `q3_grow@0.25` | -0.12 / -0.11 | -0.08 / -0.08 | +0.53 / +0.51 | 0.00 / 0.00 |
+| `q4_grow@0.25` | -0.02 / -0.02 | -0.12 / -0.11 | -0.87 / -0.78 | 0.00 / 0.00 |
+| `q3_grow@0.5` | -0.24 / -0.22 | -0.14 / -0.11 | +1.27 / +1.13 | 0.00 / 0.00 |
+| `q4_grow@0.5` | 0.00 / 0.00 | -0.17 / -0.16 | -1.64 / -1.39 | 0.00 / 0.00 |
+| `q3_grow@0.75` | -0.31 / -0.30 | -0.07 / -0.06 | +1.18 / +1.16 | +0.01 / +0.01 |
+| `q4_grow@0.75` | +0.01 / +0.01 | -0.20 / -0.14 | -1.83 / -1.61 | +0.01 / +0.01 |
+
+Q3 minus Q4 on the same traces, any continuation word [95% CI], seed-1
+traces: shrink@0.5 +0.11 [+0.07, +0.15]; shrink@0.25 +0.07 [+0.05, +0.09];
+grow@0.25 -0.11 [-0.13, -0.08]; grow@0.5 -0.24 [-0.28, -0.21]; grow@0.75
+-0.32 [-0.38, -0.27]. Seed-0 traces agree to within 0.03 on every row.
+
+What changes and what stands:
+- CORRECTION. The earlier statement "the urge to second-guess is not
+  Q3-specific; Q4 moves it at least as much" was an artefact of watching one
+  word. With the wider set, Q3 moves the urge to keep going more than Q4 at
+  every dose, in both directions, on both trace sets. The clearest case:
+  growing Q4 leaves it unchanged (0.00, CI [-0.03, +0.04] at x1.5) while
+  growing Q3 lowers it steadily (-0.12, -0.24, -0.31).
+- "Wait" alone still behaves as first reported (Q4 a little more than Q3),
+  so the old numbers were right about that word; it just is not
+  representative. Individual words differ a lot ("Hmm" falls sharply under
+  grow for both quadrants; "But" and "Alternatively" fall for Q3 only).
+- The opposite-sign "urge to conclude" result is robust to the route:
+  along the intact model's text the direct-`</think>` urge stays essentially
+  unchanged under every edit, so "end by either route" equals the
+  Final-Answer-block measure. The X shape stands.
+- But the probe cannot see a change that generation shows: under
+  `q3_grow@0.75` only 12 of 191 finished traces still write the Final Answer
+  block (intact 171/178; `q4_grow@0.75` 75/181). Edited models change HOW
+  they end, and a probe that replays intact text does not visit those paths.
+- Revised picture of the mechanism. For Q3 the two urges move together:
+  bigger Q3 = less urge to keep going AND more urge to end, hence the strong
+  shortening. For Q4, growing leaves the urge to keep going flat and LOWERS
+  the urge to end, which predicts no change or longer reasoning; generation
+  shows Q4 slightly SHORTER (0.82-0.93). So the earlier tidy account ("two
+  mechanisms that cancel for Q4") no longer works for the grow direction and
+  the mild Q4 shortening is unexplained by the probe.
+Figures: `figures/fig8_probe_continuation_words.png` (and `__contseed0`).
+Files: `probe_stop__cont.jsonl`, `probe_stop__contseed0.jsonl`,
+`probe_summary__cont*.json/.txt`.
+
 **Stopped (2026-11-14, at the owner's request): the queue is finished and
 nothing is running.** Not started: Qwen3-0.6B / 4B, a harder task than GSM8K,
 thinking-off runs for the gain pairs, seed-0 replication of x0.5 / x1.5 / x1.75.
