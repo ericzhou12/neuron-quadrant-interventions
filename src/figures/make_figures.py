@@ -539,10 +539,16 @@ GAIN_STEPS = [("shrink@0.5", 0.5), ("shrink@0.25", 0.75), ("grow@0.25", 1.25), (
 RATIO_TICKS = [0.1, 0.15, 0.2, 0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4, 5, 7]
 
 
-def _ratio_axis(ax):
-    """Y axis holds natural-log ratios; label the ticks as plain 'x times' multipliers."""
+def _ratio_axis(ax, sparse=False):
+    """Y axis holds natural-log ratios; label the ticks as plain 'x times' multipliers.
+    sparse: a handful of round ticks (1-2-5 steps for a wide range, quarters for a narrow one)."""
     lo, hi = ax.get_ylim()
-    ticks = [t for t in RATIO_TICKS if lo <= math.log(t) <= hi]
+    if sparse:
+        wide = hi - lo > math.log(4)
+        ticks = [t for t in ((0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20) if wide else (0.5, 0.75, 1, 1.25, 1.5, 2))
+                 if lo <= math.log(t) <= hi]
+    else:
+        ticks = [t for t in RATIO_TICKS if lo <= math.log(t) <= hi]
     ax.yaxis.set_major_locator(matplotlib.ticker.FixedLocator([math.log(t) for t in ticks]))
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"×{math.exp(v):.3g}"))
 
@@ -568,7 +574,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
         panels = [("conclude", "a  Urge to conclude early", "ratio to intact (log scale)"),
                   ("wait", 'b  Urge to say "Wait"', "ratio to intact (log scale)")]
     else:
-        panels = [("end_either", "a  Urge to end", "Summed probability along the trace,\nratio to intact, log scale"),
+        panels = [("end_either", "a  Urge to end", "Ratio to intact, log scale"),
                   ("continue_any", "b  Urge to keep going", "")]
 
     # One row per set of traces: the main set on top, the second set underneath.
@@ -614,7 +620,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
             ends = [(ends[0][0], mid - gap / 2, *ends[0][2:]), (ends[1][0], mid + gap / 2, *ends[1][2:])]
         for x, y, lab, col in ends:
             ax.annotate(lab, (x, y), xytext=(11, 0), textcoords="offset points", va="center", fontsize=10.5, color=col)
-        _ratio_axis(ax)
+        _ratio_axis(ax, sparse=True)
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], color=Q3_COL, lw=2.4, marker="o", ms=6, label="Q3 leaks scaled"),
                Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 leaks scaled"),
