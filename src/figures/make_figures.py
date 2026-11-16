@@ -568,19 +568,15 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
         panels = [("conclude", "a  Urge to conclude early", "ratio to intact (log scale)"),
                   ("wait", 'b  Urge to say "Wait"', "ratio to intact (log scale)")]
     else:
-        panels = [("end_either", "a  Urge to end early (either route)", "Summed probability along the trace,\nratio to intact (log scale)"),
-                  ("continue_any", "b  Urge to keep going (any of 6 word groups)", ""),
-                  ("wait", 'c  "Wait" alone (the earlier, narrower measure)', "")]
+        panels = [("end_either", "a  Urge to end", "Summed probability along the trace,\nratio to intact, log scale"),
+                  ("continue_any", "b  Urge to keep going", "")]
 
     fig, axes = plt.subplots(1, len(panels), figsize=(5.4 * len(panels), 5.5), sharex=True)
-    fig.subplots_adjust(left=0.07, right=0.965, top=0.74, bottom=0.2, wspace=0.24)
+    fig.subplots_adjust(left=0.1, right=0.95, top=0.78, bottom=0.2, wspace=0.24)
     add_header(fig, "Leak size as a dial: bigger Q3 leaks raise the urge to end and lower the urge to keep going",
-               f"Qwen3-1.7B reading the intact model's own reasoning (teacher-forced, {n_main[0]} traces, paired by "
-               "trace). Every firing in the quadrant is multiplied by x. Lines = mean ratio vs intact, shaded = 95% "
-               f"bootstrap interval.\nHollow points = the same edits on {n_rep[0] if n_rep else '?'} other traces "
-               "(replication). Panel a counts starting the Final Answer block or closing </think> directly. Panel b "
-               "sums Wait, But,\nAlternatively, Hmm, maybe and check/verify/confirm. Panels b and c share a scale: "
-               '"Wait" alone hides the Q3-vs-Q4 difference that the wider set shows.')
+               f"Qwen3-1.7B replaying the intact model's own reasoning, {n_main[0]} traces. Every firing in the "
+               "quadrant is multiplied by the leak size.\nLines = mean ratio to intact, shaded = 95% interval, "
+               f"hollow points = the same edits on {n_rep[0] if n_rep else '?'} other traces.")
     for ax, (metric, title, ylabel) in zip(axes, panels):
         ax.set_title(title)
         ax.axhline(0, color=INTACT_COL, lw=1.1, ls=":", zorder=1)
@@ -605,12 +601,9 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
         ax.set_xlim(0.4, 1.9)
         ax.set_xticks([0.5, 0.75, 1.0, 1.25, 1.5, 1.75])
         ax.set_xticklabels(["×0.5", "×0.75", "×1", "×1.25", "×1.5", "×1.75"])
-        ax.set_xlabel("Leak size (multiplier on every firing)")
+        ax.set_xlabel("Leak size")
         ax.set_ylabel(ylabel)
         ax._ends = ends
-    if not old:  # same scale for the two continuation panels
-        lo = min(axes[1].get_ylim()[0], axes[2].get_ylim()[0]); hi = max(axes[1].get_ylim()[1], axes[2].get_ylim()[1])
-        axes[1].set_ylim(lo, hi); axes[2].set_ylim(lo, hi)
     for ax in axes:
         lo, hi = ax.get_ylim()
         gap = 0.07 * (hi - lo)
@@ -623,9 +616,9 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
         _ratio_axis(ax)
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], color=Q3_COL, lw=2.4, marker="o", ms=6, label="Q3 leaks scaled"),
-               Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 leaks scaled (matched control)"),
+               Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 leaks scaled"),
                Line2D([], [], ls="", marker="o", ms=7.5, mfc=style.SURFACE, mec=INK2, mew=1.6,
-                      label="replication on other traces"),
+                      label="second set of traces"),
                Line2D([], [], color=INTACT_COL, ls=":", lw=1.1, label="intact model")]
     fig.legend(handles=handles, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 0.0))
     save(fig, out_dir, name)
