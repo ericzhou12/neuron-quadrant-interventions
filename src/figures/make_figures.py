@@ -358,15 +358,14 @@ def fig3_generation(folder: Path, out_dir: Path):
         xs = np.concatenate([[1], np.repeat(t, 2)])
         ys = np.concatenate([[1.0], np.column_stack([np.r_[1.0, alive[:-1]], alive]).ravel()])
         ax.plot(xs, ys, label=f"{c} (n={len(keys)})", **line_style(c))
-    ax.set_xscale("log")
-    ax.set_xlim(30, 6000)
+    ax.set_xlim(0, 4300)  # linear: a plain token count with a hard cap
     ax.set_ylim(-0.02, 1.02)
     ax.axvline(4096, color=INK2, lw=0.8, ls=":")
     ax.text(4096, 1.0, " cap", fontsize=7.8, color=INK2, va="top")
-    ax.set_xlabel("Thinking tokens so far (log scale)")
+    ax.set_xlabel("Thinking tokens so far")
     ax.set_ylabel("Share still thinking")
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    ax.legend(loc="lower left", ncol=1, fontsize=8.5)
+    ax.legend(loc="upper right", ncol=1, fontsize=8.5)
 
     y = np.arange(len(rows))[::-1]
     axb, axc, axd = (fig.add_subplot(gs[1, i]) for i in range(3))
