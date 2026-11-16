@@ -571,40 +571,41 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
         panels = [("end_either", "a  Urge to end", "Summed probability along the trace,\nratio to intact, log scale"),
                   ("continue_any", "b  Urge to keep going", "")]
 
-    fig, axes = plt.subplots(1, len(panels), figsize=(5.4 * len(panels), 5.5), sharex=True)
-    fig.subplots_adjust(left=0.1, right=0.95, top=0.78, bottom=0.2, wspace=0.24)
+    # One row per set of traces: the main set on top, the second set underneath.
+    sets = [(main, n_main, "first set of traces")] + ([(rep, n_rep, "second set of traces")] if n_rep else [])
+    fig, grid = plt.subplots(len(sets), len(panels), figsize=(5.6 * len(panels), 1.3 + 4.3 * len(sets)),
+                             sharex=True, sharey="col", squeeze=False)
+    fig.subplots_adjust(left=0.1, right=0.95, top=1 - 1.25 / (1.3 + 4.3 * len(sets)),
+                        bottom=0.95 / (1.3 + 4.3 * len(sets)), wspace=0.24, hspace=0.3)
     add_header(fig, "Leak size as a dial: bigger Q3 leaks raise the urge to end and lower the urge to keep going",
-               f"Qwen3-1.7B replaying the intact model's own reasoning, {n_main[0]} traces. Every firing in the "
-               "quadrant is multiplied by the leak size.\nLines = mean ratio to intact, shaded = 95% interval, "
-               f"hollow points = the same edits on {n_rep[0] if n_rep else '?'} other traces.")
-    for ax, (metric, title, ylabel) in zip(axes, panels):
-        ax.set_title(title)
-        ax.axhline(0, color=INTACT_COL, lw=1.1, ls=":", zorder=1)
-        ends = []
-        for q, col in (("q3", Q3_COL), ("q4", Q4_COL)):
-            xs, ys, los, his = [1.0], [0.0], [0.0], [0.0]
-            for s_, x in steps:
-                r = main.get(f"{q}_{s_}")
-                if r is None or r.get(metric) is None:
-                    continue
-                xs.append(x); ys.append(r[metric]["mean"]); los.append(r[metric]["ci"][0]); his.append(r[metric]["ci"][1])
-            o = np.argsort(xs)
-            xs, ys, los, his = (np.array(v)[o] for v in (xs, ys, los, his))
-            style.line_with_band(ax, xs, ys, los, his, col, None)
-            ends.append((xs[-1], ys[-1], q.upper(), col))
-            for s_, x in steps:
-                r = rep.get(f"{q}_{s_}")
-                if r is None or r.get(metric) is None:
-                    continue
-                ax.plot(x, r[metric]["mean"], "o", mfc=style.SURFACE, mec=col, mew=1.6, ms=7.5, zorder=5)
-        ends.sort(key=lambda e: e[1])
-        ax.set_xlim(0.4, 1.9)
-        ax.set_xticks([0.5, 0.75, 1.0, 1.25, 1.5, 1.75])
-        ax.set_xticklabels(["×0.5", "×0.75", "×1", "×1.25", "×1.5", "×1.75"])
+               "Qwen3-1.7B replaying the intact model's own reasoning. Every firing in the quadrant is multiplied "
+               "by the leak size.\nLines = mean ratio to intact, shaded = 95% interval.")
+    letters = iter("abcdefgh")
+    for row, (data, n_set, set_name) in zip(grid, sets):
+        for ax, (metric, title, ylabel) in zip(row, panels):
+            ax.set_title(f"{next(letters)}  {title.split('  ', 1)[1]}, {set_name}")
+            ax.axhline(0, color=INTACT_COL, lw=1.1, ls=":", zorder=1)
+            ends = []
+            for q, col in (("q3", Q3_COL), ("q4", Q4_COL)):
+                xs, ys, los, his = [1.0], [0.0], [0.0], [0.0]
+                for s_, x in steps:
+                    r = data.get(f"{q}_{s_}")
+                    if r is None or r.get(metric) is None:
+                        continue
+                    xs.append(x); ys.append(r[metric]["mean"]); los.append(r[metric]["ci"][0]); his.append(r[metric]["ci"][1])
+                o = np.argsort(xs)
+                xs, ys, los, his = (np.array(v)[o] for v in (xs, ys, los, his))
+                style.line_with_band(ax, xs, ys, los, his, col, None)
+                ends.append((xs[-1], ys[-1], q.upper(), col))
+            ends.sort(key=lambda e: e[1])
+            ax.set_xlim(0.4, 1.9)
+            ax.set_xticks([0.5, 0.75, 1.0, 1.25, 1.5, 1.75])
+            ax.set_xticklabels(["×0.5", "×0.75", "×1", "×1.25", "×1.5", "×1.75"])
+            ax.set_ylabel(ylabel)
+            ax._ends = ends
+    for ax in grid[-1]:
         ax.set_xlabel("Leak size")
-        ax.set_ylabel(ylabel)
-        ax._ends = ends
-    for ax in axes:
+    for ax in grid.ravel():
         lo, hi = ax.get_ylim()
         gap = 0.07 * (hi - lo)
         ends = ax._ends
@@ -617,10 +618,8 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], color=Q3_COL, lw=2.4, marker="o", ms=6, label="Q3 leaks scaled"),
                Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 leaks scaled"),
-               Line2D([], [], ls="", marker="o", ms=7.5, mfc=style.SURFACE, mec=INK2, mew=1.6,
-                      label="second set of traces"),
                Line2D([], [], color=INTACT_COL, ls=":", lw=1.1, label="intact model")]
-    fig.legend(handles=handles, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 0.0))
+    fig.legend(handles=handles, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.0))
     save(fig, out_dir, name)
 
 
