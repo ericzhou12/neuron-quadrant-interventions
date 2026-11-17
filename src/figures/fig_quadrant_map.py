@@ -8,7 +8,6 @@ firing in one of four quadrants (Q1..Q4).
 Panel a: a random sample of firings, one dot each, coloured by quadrant.
 Panel b: the same sampled firings, dot area proportional to |output|,
          colour by the sign of the output.
-Panel c: each quadrant's share of firings and of total |activation|.
 
 The text is the intact model's own GSM8K reasoning (prompt + thinking block of
 the first --n-traces problems in none__seed1.jsonl), replayed teacher-forced.
@@ -130,7 +129,7 @@ CORNER = {"q1": (VIEW - PAD, VIEW - PAD, "right", "top"), "q2": (VIEW - PAD, -VI
 NOTE = {"q1": "gate open, large +", "q2": "gate open, large −", "q3": "gate closed, small +",
         "q4": "gate closed, small −"}
 
-fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(16.2, 6.3), gridspec_kw={"width_ratios": [1, 1, 0.78]})
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(12.6, 6.6))
 
 cols = {"q1": "#3a2f8f", "q2": "#8f8ab8", "q3": style.Q3_COL, "q4": style.Q4_COL}
 sg, su = d["sample_g"], d["sample_u"]
@@ -159,7 +158,7 @@ big_first = np.argsort(-np.abs(so))  # draw large dots first so the small leaks 
 a2.scatter(sg[big_first], su[big_first], s=dot_size(so[big_first]),
            c=np.where(so[big_first] > 0, style.Q3_COL, style.Q4_COL), alpha=0.45, linewidths=0, zorder=2, rasterized=True)
 a2.set_aspect("equal")
-a2.set_title("b  The same firings, sized by output")
+a2.set_title("b  Same firings sized by output")
 for q in QUADS:
     x, y, ha, va = CORNER[q]
     a2.text(x, y, f"{q.upper()}\n{NOTE[q]}", ha=ha, va=va, fontsize=9.6, color=style.INK, linespacing=1.35, zorder=4,
@@ -175,23 +174,11 @@ for ax in (a1, a2):
     ax.set_xlabel("gate pre-activation"); ax.set_ylabel("up pre-activation")
     ax.set_xticks(range(-10, 11, 5)); ax.set_yticks(range(-10, 11, 5))
 
-y = np.arange(4)[::-1]
-for k, q in enumerate(QUADS):
-    a3.barh(y[k] + 0.19, share_f[k], height=0.34, color=cols[q])
-    a3.barh(y[k] - 0.19, share_a[k], height=0.34, color=cols[q], alpha=0.45)
-    a3.text(share_f[k] + 0.008, y[k] + 0.19, f"{share_f[k]:.0%} of firings", va="center", fontsize=9.5, color=style.INK)
-    a3.text(share_a[k] + 0.008, y[k] - 0.19, f"{share_a[k]:.0%} of activation", va="center", fontsize=9.5, color=style.INK2)
-a3.set_yticks(y); a3.set_yticklabels([q.upper() for q in QUADS], fontsize=11)
-a3.set_xlim(0, 0.62); a3.set_xticks([0, 0.2, 0.4]); a3.set_xticklabels(["0%", "20%", "40%"])
-a3.grid(axis="y", visible=False)
-a3.set_title("c  Q3 and Q4: most firings, little activation")
-a3.set_xlabel("share of the total")
-
-fig.suptitle(f"{args.model.split('/')[-1]}: every MLP neuron on every token of the intact model's own GSM8K reasoning "
+fig.suptitle(f"{args.model.split('/')[-1]}: every MLP neuron on every token of the intact model's own GSM8K reasoning\n"
              f"({int(d['n_traces'])} problems, {int(d['n_tokens']):,} thinking tokens, all {counts.shape[0]} layers, "
-             f"{total / 1e9:.1f} billion firings). Activation share uses |output|.",
+             f"{total / 1e9:.1f} billion firings).",
              fontsize=9.5, color=style.INK2, x=0.012, ha="left", y=0.985)
-fig.tight_layout(rect=(0, 0.07, 1, 0.955), w_pad=2.5)
+fig.tight_layout(rect=(0, 0.07, 1, 0.93), w_pad=2.5)
 out_path = folder / "figures" / "fig9_quadrant_map.png"
 fig.savefig(out_path, dpi=160)
 print("wrote", out_path)
