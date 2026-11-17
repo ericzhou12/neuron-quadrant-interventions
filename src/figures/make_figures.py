@@ -6,7 +6,7 @@
 Writes PNGs (dpi 160) into <results>/figures/. Any figure whose input data does
 not exist yet is skipped with a printed note.
 
-  fig1_damage_dose.png    damage and direct-answer rate vs share of firings zeroed (damage.json)
+  fig1_damage_dose.png    WikiText loss and MMLU accuracy vs share of firings zeroed (damage.json)
   fig2_putback_ladder.png WikiText loss for each put-back edit, Q3 vs Q4 (damage.json)
   fig3_generation.png     GSM8K thinking length, accuracy, cap hits (thinking-on runs)
   fig4_probe.png          teacher-forced stop / wait urge vs damage (probe_stop*.jsonl)
@@ -166,17 +166,15 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
     if len(series("q3", "loss_increase_pct", 0.0)[0]) < 2:
         return skip(name, "no q3_zero@p entries in damage.json")
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 4.7), sharex=True)
-    fig.subplots_adjust(left=0.06, right=0.97, top=0.78, bottom=0.27, wspace=0.3)
-    add_header(fig, "Removing Q3 or Q4 firings does matched damage, but only removing Q3 raises the direct-answer rate",
-               "Qwen3-1.7B, thinking off. x = share of the quadrant's firings set to zero (random choice of firings). "
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.7), sharex=True)
+    fig.subplots_adjust(left=0.08, right=0.95, top=0.78, bottom=0.27, wspace=0.3)
+    add_header(fig, "Removing Q3 or Q4 firings does matched damage",
+               "Qwen3-1.7B, thinking off. x = share of the quadrant's firings set to zero, chosen at random.\n"
                "Loss on WikiText; MMLU n = %d questions, one seed; bands = ±1 binomial standard error." % n)
 
     panels = [
         ("loss_increase_pct", 0.0, "a  General damage: WikiText loss", "Loss increase vs intact (%)", False),
         ("mmlu_accuracy", base.get("mmlu_accuracy"), "b  Knowledge: MMLU accuracy", "Accuracy (letter-probability score)", True),
-        ("mmlu_direct_rate", base.get("mmlu_direct_rate"), "c  Behaviour: answers at once",
-         "Share of replies giving a letter\nwithin 16 tokens (no reasoning)", True),
     ]
     for ax, (field, bval, title, ylabel, is_rate) in zip(axes, panels):
         ax.set_title(title)
@@ -212,8 +210,6 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
         ax.set_xlim(-3, 112)
         if is_rate:
             ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    if "mmlu_direct_rate" in base:
-        axes[2].set_ylim(0.38, 0.85)
     axes[1].set_ylim(0.2, 0.65)
     handles, labels = axes[0].get_legend_handles_labels()
     from matplotlib.lines import Line2D
