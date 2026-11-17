@@ -55,7 +55,7 @@ for quad, colour, dy in (("q3", style.Q3_COL, 0), ("q4", style.Q4_COL, 0)):
         summary[f"{quad}_{fill}"] = {"gain": g, "length_ratio": ratio[-1], "ci": [rlo[-1], rhi[-1]],
                                      "accuracy": acc[-1], "cap_hits": float(np.mean([run[i]["total_tokens"] >= 4096 for i in ids]))}
     o = np.argsort(xs); xs, ratio, rlo, rhi, acc, alo, ahi = (np.array(v)[o] for v in (xs, ratio, rlo, rhi, acc, alo, ahi))
-    name = f"{quad.upper()} leaks"
+    name = f"{quad.upper()} activations"
     style.line_with_band(a1, xs, ratio, rlo, rhi, colour, name)
     style.line_with_band(a2, xs, acc, alo, ahi, colour, name, dy=-9 if quad == "q3" else 9)
 
@@ -63,11 +63,11 @@ a1.set_yscale("log"); a1.set_yticks([0.4, 0.5, 0.7, 1, 1.5, 2])
 a1.set_yticklabels(["0.4", "0.5", "0.7", "1", "1.5", "2"]); a1.minorticks_off()
 style.reference_line(a1, 1, "intact", 1.83)
 a1.set_ylabel("thinking length vs intact (median ratio)")
-a1.set_title("Bigger Q3 leaks, shorter reasoning")
+a1.set_title("Bigger Q3 activations, shorter reasoning")
 a2.set_ylabel("GSM8K accuracy"); a2.set_ylim(0.4, 1.0)
 a2.set_title("Accuracy holds from x1 to x1.5")
 for ax in (a1, a2):
-    ax.set_xlabel("leak size multiplier (1 = intact)")
+    ax.set_xlabel("activation size multiplier (1 = intact)")
     ax.set_xticks([0.5, 0.75, 1, 1.25, 1.5, 1.75]); ax.set_xlim(0.42, 1.83)
 fig.suptitle(f"Qwen3-1.7B, 200 GSM8K problems, seed {seed}. Shaded: 95% interval.",
              fontsize=9.5, color=style.INK2, x=0.012, ha="left", y=0.985)

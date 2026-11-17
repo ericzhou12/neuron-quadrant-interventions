@@ -127,8 +127,8 @@ diverge = LinearSegmentedColormap.from_list("leak", ["#7a2f0d", style.Q4_COL, "#
 PAD = 0.04 * VIEW
 CORNER = {"q1": (VIEW - PAD, VIEW - PAD, "right", "top"), "q2": (VIEW - PAD, -VIEW + PAD, "right", "bottom"),
           "q3": (-VIEW + PAD, -VIEW + PAD, "left", "bottom"), "q4": (-VIEW + PAD, VIEW - PAD, "left", "top")}
-NOTE = {"q1": "gate open, large +", "q2": "gate open, large −", "q3": "gate closed, small + leak",
-        "q4": "gate closed, small − leak"}
+NOTE = {"q1": "gate open, large +", "q2": "gate open, large −", "q3": "gate closed, small +",
+        "q4": "gate closed, small −"}
 
 fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(16.2, 6.3), gridspec_kw={"width_ratios": [1, 1, 0.78]})
 
@@ -184,7 +184,7 @@ for k, q in enumerate(QUADS):
 a3.set_yticks(y); a3.set_yticklabels([q.upper() for q in QUADS], fontsize=11)
 a3.set_xlim(0, 0.62); a3.set_xticks([0, 0.2, 0.4]); a3.set_xticklabels(["0%", "20%", "40%"])
 a3.grid(axis="y", visible=False)
-a3.set_title("c  Leaks: most firings, little activation")
+a3.set_title("c  Q3 and Q4: most firings, little activation")
 a3.set_xlabel("share of the total")
 
 fig.suptitle(f"{args.model.split('/')[-1]}: every MLP neuron on every token of the intact model's own GSM8K reasoning "

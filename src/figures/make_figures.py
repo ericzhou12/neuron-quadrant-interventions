@@ -240,7 +240,7 @@ def fig2_putback_ladder(folder: Path, out_dir: Path):
                              squeeze=False)
     axes = axes[0]
     fig.subplots_adjust(left=0.06, right=0.985, top=0.79, bottom=0.25, wspace=0.12)
-    add_header(fig, "Damage grows as each edit throws away more of the leak's structure, alike for Q3 and Q4",
+    add_header(fig, "Damage grows as each edit throws away more of the activation's structure, alike for Q3 and Q4",
                "Qwen3-1.7B. Bars = WikiText loss increase vs intact model (log scale); edits ordered left to right "
                "from least to most structure destroyed. Single evaluation, no error bars.")
     bw = 0.38
@@ -331,8 +331,8 @@ def fig3_generation(folder: Path, out_dir: Path):
     SHOWN = ["none", "q3_shrink@0.5", "q4_shrink@0.5", "q3_grow@0.5", "q4_grow@0.5"]
     shown = [c for c in SHOWN if c in rows] or rows
 
-    NICE = {"none": "intact", "q3_shrink@0.5": "Q3 leaks ×0.5", "q4_shrink@0.5": "Q4 leaks ×0.5",
-            "q3_grow@0.5": "Q3 leaks ×1.5", "q4_grow@0.5": "Q4 leaks ×1.5"}
+    NICE = {"none": "intact", "q3_shrink@0.5": "Q3 activations ×0.5", "q4_shrink@0.5": "Q4 activations ×0.5",
+            "q3_grow@0.5": "Q3 activations ×1.5", "q4_grow@0.5": "Q4 activations ×1.5"}
 
     def line_style(c):
         if c == "none":
@@ -511,9 +511,9 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
                              sharex=True, sharey="col", squeeze=False)
     fig.subplots_adjust(left=0.1, right=0.95, top=1 - 1.25 / (1.3 + 4.3 * len(sets)),
                         bottom=0.95 / (1.3 + 4.3 * len(sets)), wspace=0.24, hspace=0.3)
-    add_header(fig, "Leak size as a dial: bigger Q3 leaks raise the urge to end and lower the urge to keep going",
+    add_header(fig, "Activation size as a dial: bigger Q3 activations raise the urge to end and lower the urge to keep going",
                "Qwen3-1.7B replaying the intact model's own reasoning. Every firing in the quadrant is multiplied "
-               "by the leak size.\nLines = mean ratio to intact, shaded = 95% interval.")
+               "by the activation size.\nLines = mean ratio to intact, shaded = 95% interval.")
     letters = iter("abcdefgh")
     for row, (data, n_set, set_name) in zip(grid, sets):
         for ax, (metric, title, ylabel) in zip(row, panels):
@@ -538,7 +538,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
             ax.set_ylabel(ylabel)
             ax._ends = ends
     for ax in grid[-1]:
-        ax.set_xlabel("Leak size")
+        ax.set_xlabel("Activation size")
     for ax in grid.ravel():
         lo, hi = ax.get_ylim()
         gap = 0.07 * (hi - lo)
@@ -550,8 +550,8 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
             ax.annotate(lab, (x, y), xytext=(11, 0), textcoords="offset points", va="center", fontsize=10.5, color=col)
         _ratio_axis(ax, sparse=True)
     from matplotlib.lines import Line2D
-    handles = [Line2D([], [], color=Q3_COL, lw=2.4, marker="o", ms=6, label="Q3 leaks scaled"),
-               Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 leaks scaled"),
+    handles = [Line2D([], [], color=Q3_COL, lw=2.4, marker="o", ms=6, label="Q3 activations scaled"),
+               Line2D([], [], color=Q4_COL, lw=2.4, marker="o", ms=6, label="Q4 activations scaled"),
                Line2D([], [], color=INTACT_COL, ls=":", lw=1.1, label="intact model")]
     fig.legend(handles=handles, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.0))
     save(fig, out_dir, name)

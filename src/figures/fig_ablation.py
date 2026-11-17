@@ -30,7 +30,7 @@ CAP = 4096
 EDITS = [("flatten to typical\nvalue (qmean)\nseed 1", "qmean", 1),
          ("remove 25%\n(zero@0.25)\nseed 1", "zero@0.25", 1),
          ("remove 25%\n(zero@0.25)\nseed 0", "zero@0.25", 0)]
-QUADS = (("q3", style.Q3_COL, "Q3 leaks", -0.16), ("q4", style.Q4_COL, "Q4 leaks (control)", 0.16))
+QUADS = (("q3", style.Q3_COL, "Q3 activations", -0.16), ("q4", style.Q4_COL, "Q4 activations (control)", 0.16))
 
 
 def load(name):
@@ -90,7 +90,7 @@ a1.set_title("a  Partial ablation makes reasoning longer")
 a2.set_ylim(0.6, 1.0); a2.set_ylabel("GSM8K accuracy")
 a2.set_title("b  Accuracy barely moves")
 handles = [plt.Line2D([], [], marker="o", ls="", color=c, ms=8, label=l)
-           for c, l in ((style.INTACT_COL, "intact"), (style.Q3_COL, "Q3 leaks"), (style.Q4_COL, "Q4 leaks (control)"))]
+           for c, l in ((style.INTACT_COL, "intact"), (style.Q3_COL, "Q3 activations"), (style.Q4_COL, "Q4 activations (control)"))]
 a2.legend(handles=handles, loc="lower left", ncol=3, handletextpad=0.2, columnspacing=1.2)
 
 # Panel c: the whole quadrant zeroed. One dot per problem.
