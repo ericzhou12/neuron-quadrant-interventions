@@ -187,8 +187,6 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
             se = binom_se(bval, n)
             ax.axhspan(bval - se, bval + se, color=INTACT_COL, alpha=0.15, lw=0)
             ax.axhline(bval, color=INTACT_COL, lw=1.2, ls="--")
-        else:
-            ax.axhline(0, color=INTACT_COL, lw=1.2, ls="--")
         ends = []
         for q, col, lab in (("q3", Q3_COL, "Q3 (gate < 0, up < 0)"), ("q4", Q4_COL, "Q4 matched control (gate < 0, up > 0)")):
             xs, ys = series(q, field, bval)
@@ -217,8 +215,6 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
     if "mmlu_direct_rate" in base:
         axes[2].set_ylim(0.38, 0.85)
     axes[1].set_ylim(0.2, 0.65)
-    axes[1].axhline(0.25, color=INK2, lw=0.9, ls=":")
-    axes[1].annotate("chance", (0, 0.25), xytext=(2, 4), textcoords="offset points", fontsize=8.5, color=INK2)
     handles, labels = axes[0].get_legend_handles_labels()
     from matplotlib.lines import Line2D
     handles.append(Line2D([], [], color=INTACT_COL, ls="--", lw=1.2))
