@@ -559,7 +559,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
 # ----------------------------------------------------------------------------- fig 6
 
 FIG6_ROWS = [("none", "none__seed1.jsonl", "Intact model"),
-             ("q3_mean", "q3_mean__seed1.jsonl", "Q3 set to neuron mean\n(Goodfire-style fill)"),
+             ("q3_mean", "q3_mean__seed1.jsonl", "Q3 set to neuron mean"),
              ("q4_mean", "q4_mean__seed1.jsonl", "Q4 set to neuron mean"),
              ("q3_zero", "q3_zero__seed1.jsonl", "Q3 removed (zero)"),
              ("q4_zero", "q4_zero__first25__seed1.jsonl", "Q4 removed (zero)")]
@@ -599,9 +599,8 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
                         bottom=0.65 / fig.get_figheight())
     add_header(fig, "Editing a whole quadrant breaks the model: it skips thinking or loops to the cap, and solves nothing",
                "Qwen3-1.7B, GSM8K, thinking on, seed 1, first 50 problems (Q4 zero: first 25). One dot per problem; "
-               "filled = correct, hollow = wrong. Piles at ~0 (0-5 tokens) and at the\n4096-token cap are "
-               "stacked so every problem is visible; bold number = pile size. Damage = WikiText loss increase vs intact (single evaluation). No error bars: every "
-               "problem is shown.", top=0.985)
+               "filled = correct, hollow = wrong.\nDamage = WikiText loss increase vs intact (single evaluation).",
+               top=0.985)
     rng = np.random.default_rng(0)
     y = np.arange(len(data))[::-1]
     dx, dy, per_col = 52, 0.075, 9
@@ -632,17 +631,6 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
         d = dmg.get(cond, {}).get("loss_increase_pct")
         dtxt = "damage —" if cond == "none" else (f"damage +{d:.0f}%" if d is not None else "damage n/a")
         labels.append(f"{label}\nn = {len(recs)}, accuracy {ok.mean():.0%}, {dtxt}")
-        tot = np.array([r.get("total_tokens", -1) for r in recs])
-        empty = int((tot == 0).sum())
-        looped = int((zero & (tot >= CAP)).sum())
-        note = []
-        if empty:
-            note.append(f"{empty} of {len(recs)} emitted nothing at all (stopped at once)")
-        if looped:
-            of = "all" if looped == zero.sum() else f"{looped} of the"
-            note.append(f"{of} {int(zero.sum())} that skipped thinking then looped in the answer up to the cap")
-        if note:
-            ax.text(200, yi, "\n".join(note), fontsize=7.8, color=INK2, va="center")
     ax.axvline(CAP, color=INK2, lw=0.9, ls=":", zorder=1)
     ax.text(CAP, len(data) - 0.42, "4096-token cap\n(never closed </think>)", ha="center", va="bottom",
             fontsize=7.8, color=INK2)
