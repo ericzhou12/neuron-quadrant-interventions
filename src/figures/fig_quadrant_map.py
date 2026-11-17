@@ -120,12 +120,13 @@ print(json.dumps({k: v for k, v in summary.items() if k != "per_layer_share_of_f
 
 # ---------------------------------------------------------------- plot
 style.apply()
-VIEW = 4.0
+VIEW = 10.0  # shows ~99% of firings; +-4 showed only 80%
 density = LinearSegmentedColormap.from_list("ink", [style.SURFACE, "#cfcbe6", "#7f74c9", "#3a2f8f", "#17123f"])
 diverge = LinearSegmentedColormap.from_list("leak", ["#7a2f0d", style.Q4_COL, "#f3ede6", style.Q3_COL, "#0f3a73"])
 # where each quadrant's label sits: (x, y, ha, va), with gate on x and up on y
-CORNER = {"q1": (VIEW - 0.15, VIEW - 0.15, "right", "top"), "q2": (VIEW - 0.15, -VIEW + 0.15, "right", "bottom"),
-          "q3": (-VIEW + 0.15, -VIEW + 0.15, "left", "bottom"), "q4": (-VIEW + 0.15, VIEW - 0.15, "left", "top")}
+PAD = 0.04 * VIEW
+CORNER = {"q1": (VIEW - PAD, VIEW - PAD, "right", "top"), "q2": (VIEW - PAD, -VIEW + PAD, "right", "bottom"),
+          "q3": (-VIEW + PAD, -VIEW + PAD, "left", "bottom"), "q4": (-VIEW + PAD, VIEW - PAD, "left", "top")}
 NOTE = {"q1": "gate open, large +", "q2": "gate open, large −", "q3": "gate closed, small + leak",
         "q4": "gate closed, small − leak"}
 
@@ -135,7 +136,7 @@ cols = {"q1": "#3a2f8f", "q2": "#8f8ab8", "q3": style.Q3_COL, "q4": style.Q4_COL
 sg, su = d["sample_g"], d["sample_u"]
 quad_of = np.where(sg > 0, np.where(su > 0, 0, 1), np.where(su < 0, 2, 3))
 order = np.random.default_rng(0).permutation(len(sg))  # so no quadrant is drawn on top of another
-a1.scatter(sg[order], su[order], s=5, c=[cols[QUADS[k]] for k in quad_of[order]], alpha=0.55, linewidths=0, zorder=2,
+a1.scatter(sg[order], su[order], s=4, c=[cols[QUADS[k]] for k in quad_of[order]], alpha=0.55, linewidths=0, zorder=2,
            rasterized=True)
 a1.set_aspect("equal")
 a1.set_title(f"a  {len(sg):,} randomly sampled firings")
@@ -145,12 +146,14 @@ for k, q in enumerate(QUADS):
             fontweight="bold", linespacing=1.35, zorder=4,
             bbox=dict(boxstyle="round,pad=0.3", fc=style.SURFACE, ec="none", alpha=0.9))
 
-G, U = np.meshgrid(d["grid"], d["grid"])
-out = np.interp(G, d["grid"], d["act"]) * U
-im2 = a2.imshow(out, origin="lower", extent=(-LIM, LIM, -LIM, LIM), cmap=diverge,
-                norm=SymLogNorm(linthresh=0.5, vmin=-12, vmax=12), aspect="equal")
-cb2 = fig.colorbar(im2, ax=a2, fraction=0.046, pad=0.03, ticks=[-10, -3, -1, -0.3, 0, 0.3, 1, 3, 10])
-cb2.ax.set_yticklabels(["−10", "−3", "−1", "−0.3", "0", "+0.3", "+1", "+3", "+10"])
+axis = np.linspace(-VIEW, VIEW, 801)
+G, U = np.meshgrid(axis, axis)
+assert "SiLU" in str(d["act_name"])
+out = G / (1 + np.exp(-G)) * U  # SiLU(gate) * up
+im2 = a2.imshow(out, origin="lower", extent=(-VIEW, VIEW, -VIEW, VIEW), cmap=diverge,
+                norm=SymLogNorm(linthresh=0.5, vmin=-100, vmax=100), aspect="equal")
+cb2 = fig.colorbar(im2, ax=a2, fraction=0.046, pad=0.03, ticks=[-100, -10, -1, -0.3, 0, 0.3, 1, 10, 100])
+cb2.ax.set_yticklabels(["−100", "−10", "−1", "−0.3", "0", "+0.3", "+1", "+10", "+100"])
 cb2.set_label("neuron output = SiLU(gate) × up"); cb2.outline.set_visible(False)
 a2.set_title("b  What each firing outputs")
 for q in QUADS:
@@ -161,7 +164,7 @@ for ax in (a1, a2):
     ax.axhline(0, color=style.INK, lw=0.9); ax.axvline(0, color=style.INK, lw=0.9)
     ax.set_xlim(-VIEW, VIEW); ax.set_ylim(-VIEW, VIEW); ax.grid(False)
     ax.set_xlabel("gate pre-activation"); ax.set_ylabel("up pre-activation")
-    ax.set_xticks(range(-4, 5, 2)); ax.set_yticks(range(-4, 5, 2))
+    ax.set_xticks(range(-10, 11, 5)); ax.set_yticks(range(-10, 11, 5))
 
 y = np.arange(4)[::-1]
 for k, q in enumerate(QUADS):
