@@ -597,7 +597,7 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
     fig, ax = plt.subplots(figsize=(12, 1.15 * len(data) + 2.4))
     fig.subplots_adjust(left=0.22, right=0.985, top=1 - 1.25 / fig.get_figheight(),
                         bottom=0.65 / fig.get_figheight())
-    add_header(fig, "Editing a whole quadrant breaks the model: it skips thinking or loops to the cap, and solves nothing",
+    add_header(fig, "Ablating a whole quadrant breaks the model",
                "Qwen3-1.7B, GSM8K, thinking on, seed 1, first 50 problems (Q4 zero: first 25). One dot per problem; "
                "filled = correct, hollow = wrong.\nDamage = WikiText loss increase vs intact (single evaluation).",
                top=0.985)
