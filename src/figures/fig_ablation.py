@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import style  # noqa: E402
+from scoring import last_boxed_correct  # noqa: E402
 
 style.apply()
 folder = Path(sys.argv[1] if len(sys.argv) > 1 else "results/q3__Qwen__Qwen3-1.7B")
@@ -56,7 +57,7 @@ fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(15.5, 5.4), gridspec_kw={"width_
 for gi, (xlabel, fill, seed) in enumerate(EDITS):
     base = load(f"none__seed{seed}")
     ids = sorted(base)
-    k = sum(base[i]["correct"] for i in ids); lo, hi = wilson(k, len(ids))
+    k = sum(last_boxed_correct(base[i]) for i in ids); lo, hi = wilson(k, len(ids))
     errbar(a2, gi - 0.3, k / len(ids), lo, hi, style.INTACT_COL)
     for quad, colour, _, dx in QUADS:
         run = load(f"{quad}_{fill}__seed{seed}")
@@ -68,12 +69,12 @@ for gi, (xlabel, fill, seed) in enumerate(EDITS):
         errbar(a1, gi + dx, med, rlo, rhi, colour)
         a1.annotate(f"×{med:.2f}", (gi + dx, rhi), xytext=(0, 7), textcoords="offset points",
                     ha="center", fontsize=9, color=style.INK2)
-        kk = sum(run[i]["correct"] for i in ids); alo, ahi = wilson(kk, len(ids))
+        kk = sum(last_boxed_correct(run[i]) for i in ids); alo, ahi = wilson(kk, len(ids))
         errbar(a2, gi + dx * 0.9 + 0.08, kk / len(ids), alo, ahi, colour)
-        lost = sum(base[i]["correct"] and not run[i]["correct"] for i in ids)
-        gained = sum(run[i]["correct"] and not base[i]["correct"] for i in ids)
+        lost = sum(last_boxed_correct(base[i]) and not last_boxed_correct(run[i]) for i in ids)
+        gained = sum(last_boxed_correct(run[i]) and not last_boxed_correct(base[i]) for i in ids)
         summary[f"{quad}_{fill}__seed{seed}"] = {
-            "n": len(ids), "length_ratio": med, "ci": [rlo, rhi], "accuracy": kk / len(ids),
+            "n": len(ids), "length_ratio": med, "ci": [rlo, rhi], "accuracy": kk / len(ids), "accuracy_answer_section_only": sum(run[i]["correct"] for i in ids) / len(ids),
             "intact_accuracy": k / len(ids), "lost": lost, "gained": gained,
             "median_thinking_tokens": float(np.median([run[i]["thinking_tokens"] for i in ids])),
             "cap_hits": float(np.mean([run[i]["total_tokens"] >= CAP for i in ids]))}
@@ -87,7 +88,7 @@ a1.annotate("intact", (len(EDITS) - 0.4, 1), xytext=(-4, 5), textcoords="offset 
 a1.set_ylim(0.9, 1.6)
 a1.set_ylabel("thinking length vs intact (median ratio)")
 a1.set_title("a  Partial ablation makes reasoning longer")
-a2.set_ylim(0.6, 1.0); a2.set_ylabel("GSM8K accuracy")
+a2.set_ylim(0.6, 1.0); a2.set_ylabel("GSM8K accuracy, last boxed answer")
 a2.set_title("b  Accuracy barely moves")
 handles = [plt.Line2D([], [], marker="o", ls="", color=c, ms=8, label=l)
            for c, l in ((style.INTACT_COL, "intact"), (style.Q3_COL, "Q3 activations"), (style.Q4_COL, "Q4 activations (control)"))]
@@ -108,7 +109,7 @@ for xi, (lab, run, colour) in enumerate(rows):
     a3.scatter(xi + rng.uniform(-0.2, 0.2, len(t)), t + 1, s=26, color=colour, alpha=0.6, linewidths=0, zorder=3)
     near0, capped = int((t <= 4).sum()), int((t >= CAP - 16).sum())  # capped = still thinking at the cap
     if lab != "intact":
-        acc = np.mean([run[i]["correct"] for i in ids])
+        acc = np.mean([last_boxed_correct(run[i]) for i in ids])
         a3.annotate(f"{near0} of {len(t)} skip\nthinking,\n{capped} of {len(t)} run\nto the cap\naccuracy {acc:.0%}",
                     (xi, 22), ha="center", va="center", fontsize=8.6, color=style.INK2)
         summary[name] = {"n": len(t), "near_zero": near0, "capped": capped, "accuracy": float(acc)}

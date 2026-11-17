@@ -2,7 +2,8 @@
 
 Every Q3 (or Q4) firing is multiplied by a gain: shrink@0.5 = x0.5, none = x1,
 grow@0.25 = x1.25, and so on. Left: median per-problem thinking length relative
-to the intact model (bootstrap 95% band). Right: GSM8K accuracy (Wilson 95% band).
+to the intact model (bootstrap 95% band). Right: GSM8K accuracy scored on the last
+boxed answer anywhere in the output (Wilson 95% band); see scoring.py.
 
 Usage: python src/figures/fig_gain_dose.py [results/q3__Qwen__Qwen3-1.7B] [seed]
 Writes figures/fig7_gain_dose_response.png and gain_dose_summary__seed<k>.json.
@@ -16,6 +17,7 @@ import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import style  # noqa: E402
+from scoring import last_boxed_correct  # noqa: E402
 
 style.apply()
 folder = Path(sys.argv[1] if len(sys.argv) > 1 else "results/q3__Qwen__Qwen3-1.7B")
@@ -41,7 +43,7 @@ summary = {}
 fig, (a1, a2) = plt.subplots(1, 2, figsize=(12.5, 4.9))
 for quad, colour, dy in (("q3", style.Q3_COL, 0), ("q4", style.Q4_COL, 0)):
     xs, ratio, rlo, rhi, acc, alo, ahi = [1.0], [1.0], [1.0], [1.0], [], [], []
-    k = sum(base[i]["correct"] for i in ids); lo, hi = wilson(k, len(ids))
+    k = sum(last_boxed_correct(base[i]) for i in ids); lo, hi = wilson(k, len(ids))
     acc.append(k / len(ids)); alo.append(lo); ahi.append(hi)
     for g, fill in sorted(GAINS.items()):
         run = load(f"{quad}_{fill}")
@@ -49,11 +51,11 @@ for quad, colour, dy in (("q3", style.Q3_COL, 0), ("q4", style.Q4_COL, 0)):
             continue
         r = np.array([run[i]["thinking_tokens"] / max(1, base[i]["thinking_tokens"]) for i in ids])
         boots = [np.median(rng.choice(r, len(r))) for _ in range(2000)]
-        k = sum(run[i]["correct"] for i in ids); lo, hi = wilson(k, len(ids))
+        k = sum(last_boxed_correct(run[i]) for i in ids); lo, hi = wilson(k, len(ids))
         xs.append(g); ratio.append(float(np.median(r))); rlo.append(float(np.percentile(boots, 2.5)))
         rhi.append(float(np.percentile(boots, 97.5))); acc.append(k / len(ids)); alo.append(lo); ahi.append(hi)
         summary[f"{quad}_{fill}"] = {"gain": g, "length_ratio": ratio[-1], "ci": [rlo[-1], rhi[-1]],
-                                     "accuracy": acc[-1], "cap_hits": float(np.mean([run[i]["total_tokens"] >= 4096 for i in ids]))}
+                                     "accuracy": acc[-1], "accuracy_answer_section_only": sum(run[i]["correct"] for i in ids) / len(ids), "cap_hits": float(np.mean([run[i]["total_tokens"] >= 4096 for i in ids]))}
     o = np.argsort(xs); xs, ratio, rlo, rhi, acc, alo, ahi = (np.array(v)[o] for v in (xs, ratio, rlo, rhi, acc, alo, ahi))
     name = f"{quad.upper()} activations"
     style.line_with_band(a1, xs, ratio, rlo, rhi, colour, name)
@@ -64,7 +66,7 @@ a1.set_yticklabels(["0.4", "0.5", "0.7", "1", "1.5", "2"]); a1.minorticks_off()
 style.reference_line(a1, 1, "intact", 1.83)
 a1.set_ylabel("thinking length vs intact (median ratio)")
 a1.set_title("Bigger Q3 activations, shorter reasoning")
-a2.set_ylabel("GSM8K accuracy"); a2.set_ylim(0.4, 1.0)
+a2.set_ylabel("GSM8K accuracy, last boxed answer"); a2.set_ylim(0.4, 1.0)
 a2.set_title("Accuracy holds from x1 to x1.5")
 for ax in (a1, a2):
     ax.set_xlabel("activation size multiplier (1 = intact)")
