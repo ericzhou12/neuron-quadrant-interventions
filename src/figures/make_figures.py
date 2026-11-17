@@ -631,6 +631,17 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
         d = dmg.get(cond, {}).get("loss_increase_pct")
         dtxt = "damage —" if cond == "none" else (f"damage +{d:.0f}%" if d is not None else "damage n/a")
         labels.append(f"{label}\nn = {len(recs)}, accuracy {ok.mean():.0%}, {dtxt}")
+        tot = np.array([r.get("total_tokens", -1) for r in recs])
+        empty = int((tot == 0).sum())
+        looped = int((zero & (tot >= CAP)).sum())
+        note = []
+        if empty:
+            note.append(f"{empty} of {len(recs)} emitted nothing at all (stopped at once)")
+        if looped:
+            of = "all" if looped == zero.sum() else f"{looped} of the"
+            note.append(f"{of} {int(zero.sum())} that skipped thinking then looped in the answer up to the cap")
+        if note:
+            ax.text(200, yi, "\n".join(note), fontsize=7.8, color=INK2, va="center")
     ax.axvline(CAP, color=INK2, lw=0.9, ls=":", zorder=1)
     ax.text(CAP, len(data) - 0.42, "4096-token cap\n(never closed </think>)", ha="center", va="bottom",
             fontsize=7.8, color=INK2)
