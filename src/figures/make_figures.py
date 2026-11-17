@@ -8,7 +8,7 @@ not exist yet is skipped with a printed note.
 
   fig1_damage_dose.png    WikiText loss and MMLU accuracy vs share of firings zeroed (damage.json)
   fig2_putback_ladder.png WikiText loss for each put-back edit, Q3 vs Q4 (damage.json)
-  fig3_generation.png     GSM8K thinking length, accuracy, cap hits (thinking-on runs)
+  fig3_generation.png     share of GSM8K problems still thinking after t tokens (thinking-on runs)
   fig4_probe.png          teacher-forced stop / wait urge vs damage (probe_stop*.jsonl)
   fig5_probe_conclude.png gain dial: conclude / wait urge vs leak size x0.5-x1.5 (probe_summary__v3seed0/v2.json)
   fig6_full_ablation.png  per-problem thinking length when a whole quadrant is mean-filled or zeroed (seed 1)
@@ -318,22 +318,21 @@ def fig3_generation(folder: Path, out_dir: Path):
     seeds = sorted({k[0] for k in all_keys})
 
     rows = ["none"] + conds
-    fig = plt.figure(figsize=(12.5, 4.6 + 0.32 * len(rows) + 0.5))
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 0.18 + 0.075 * len(rows)], hspace=0.42, wspace=0.14,
-                          left=0.11, right=0.985, top=0.86, bottom=0.08)
+    fig = plt.figure(figsize=(11.5, 5.6))
     ns = sorted({len(paired[c]) for c in conds})
-    n_txt = f"n = {ns[0]}" if len(ns) == 1 else f"n = {ns[0]}-{ns[-1]}"
-    add_header(fig, "GSM8K with thinking on: how long the model reasons, and whether it gets the answer",
-               f"Qwen3-1.7B, {n_txt} problems per condition (seeds {', '.join(map(str, seeds))} pooled), each paired "
-               "with the intact model on the same problem and seed. Thinking capped at 4096 tokens.")
+    add_header(fig, "GSM8K with thinking on: how long the model keeps thinking",
+               "Qwen3-1.7B, 200 problems per edit, same problems as the intact model. Thinking capped at 4096 tokens.")
 
     # (a) survival curves
-    ax = fig.add_subplot(gs[0, :])
-    ax.set_title("a  Share of problems still thinking after t tokens (leaks halved, dashed, vs 50% larger, solid)")
+    ax = fig.add_axes([0.08, 0.12, 0.89, 0.66])
+    ax.set_title("Share of problems still thinking after t tokens")
     # Only the clearest contrast is drawn here (leaks halved vs made 50% larger);
     # panels b-d list every edit.
     SHOWN = ["none", "q3_shrink@0.5", "q4_shrink@0.5", "q3_grow@0.5", "q4_grow@0.5"]
     shown = [c for c in SHOWN if c in rows] or rows
+
+    NICE = {"none": "intact", "q3_shrink@0.5": "Q3 leaks ×0.5", "q4_shrink@0.5": "Q4 leaks ×0.5",
+            "q3_grow@0.5": "Q3 leaks ×1.5", "q4_grow@0.5": "Q4 leaks ×1.5"}
 
     def line_style(c):
         if c == "none":
@@ -347,7 +346,7 @@ def fig3_generation(folder: Path, out_dir: Path):
         alive = 1.0 - np.arange(1, len(t) + 1) / len(t)
         xs = np.concatenate([[1], np.repeat(t, 2)])
         ys = np.concatenate([[1.0], np.column_stack([np.r_[1.0, alive[:-1]], alive]).ravel()])
-        ax.plot(xs, ys, label=f"{c} (n={len(keys)})", **line_style(c))
+        ax.plot(xs, ys, label=NICE.get(c, c), **line_style(c))
     ax.set_xlim(0, 4300)  # linear: a plain token count with a hard cap
     ax.set_ylim(-0.02, 1.02)
     ax.axvline(4096, color=INK2, lw=0.8, ls=":")
@@ -355,69 +354,8 @@ def fig3_generation(folder: Path, out_dir: Path):
     ax.set_xlabel("Thinking tokens so far")
     ax.set_ylabel("Share still thinking")
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    ax.legend(loc="upper right", ncol=1, fontsize=8.5)
+    ax.legend(loc="upper right", bbox_to_anchor=(0.94, 1.0), ncol=1, fontsize=9.5)
 
-    y = np.arange(len(rows))[::-1]
-    axb, axc, axd = (fig.add_subplot(gs[1, i]) for i in range(3))
-
-    # (b) paired ratio
-    axb.set_title("b  Thinking length vs intact, same problem")
-    for yi, c in zip(y, rows):
-        if c == "none":
-            axb.plot(1, yi, "o", color=INTACT_COL, ms=7)
-            continue
-        keys = paired[c]
-        ratio = np.array([max(variants[c][k]["thinking_tokens"], 1) / max(base[k]["thinking_tokens"], 1) for k in keys])
-        med = float(np.median(ratio))
-        lo, hi = bootstrap(lambda ix: np.median(ratio[ix]), len(ratio))
-        col = quad_colour(c)
-        axb.plot([lo, hi], [yi, yi], color=col, lw=2, solid_capstyle="round")
-        axb.plot(med, yi, "o", color=col, ms=7, mec=style.SURFACE, mew=1.2)
-        axb.annotate(f"{med:.2f}", (hi, yi), xytext=(4, 0), textcoords="offset points", va="center",
-                     fontsize=7.5, color=INK2)
-    axb.axvline(1, color=INTACT_COL, lw=1.1, ls="--")
-    axb.set_xscale("log")
-    axb.set_xlabel("Median per-problem ratio\n(condition ÷ intact), log; 95% bootstrap CI")
-    lo_x, hi_x = axb.get_xlim()
-    axb.set_xlim(min(lo_x, 0.5), max(hi_x, 2.0))
-    lo_x, hi_x = axb.get_xlim()
-    ticks = [t for t in (0.1, 0.2, 0.25, 0.5, 1, 2, 4, 8) if lo_x <= t <= hi_x]
-    axb.xaxis.set_major_locator(matplotlib.ticker.FixedLocator(ticks))
-    axb.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
-    axb.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-
-    # (c) accuracy, (d) cap-hit rate
-    for axx, field, title, xlabel in (
-            (axc, "correct", "c  Accuracy", "Share correct; 95% Wilson interval"),
-            (axd, "capped", "d  Hit the 4096-token cap", "Share that never closed </think>;\n95% Wilson interval")):
-        axx.set_title(title)
-        for yi, c in zip(y, rows):
-            keys = all_keys if c == "none" else paired[c]
-            recs = base if c == "none" else variants[c]
-            if field == "correct":
-                k = sum(bool(recs[kk]["correct"]) for kk in keys)
-            else:
-                k = sum(not recs[kk]["finished_thinking"] for kk in keys)
-            p, lo, hi = wilson(k, len(keys))
-            col = quad_colour(c)
-            axx.plot([lo, hi], [yi, yi], color=col, lw=2, solid_capstyle="round")
-            axx.plot(p, yi, "o", color=col, ms=7, mec=style.SURFACE, mew=1.2)
-            if c == "none":
-                axx.axvline(p, color=INTACT_COL, lw=1.1, ls="--")
-        axx.set_xlabel(xlabel)
-        axx.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
-    axc.set_xlim(0, 1)
-    axd.set_xlim(0, max(0.25, axd.get_xlim()[1]))
-
-    for axx in (axb, axc, axd):
-        axx.set_yticks(y)
-        axx.set_ylim(-0.6, len(rows) - 0.4)
-        axx.grid(axis="y", visible=False)
-    axb.set_yticklabels([f"{c}" for c in rows])
-    for lab, c in zip(axb.get_yticklabels(), rows):
-        lab.set_color(INK)
-    axc.set_yticklabels([])
-    axd.set_yticklabels([])
     save(fig, out_dir, name)
 
 
