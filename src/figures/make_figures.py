@@ -150,14 +150,14 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
     dmg = load_damage(folder)
     if dmg is None or "none" not in dmg:
         return skip(name, "no damage.json (or no 'none' entry)")
-    doses = [0.05, 0.1, 0.25, 0.5]
+    doses = [0.05, 0.1, 0.25, 0.5, 1.0]  # 1.0 = the whole quadrant (key "<q>_zero")
     base = dmg["none"]
     n = base.get("mmlu_n", 300)
 
     def series(q: str, field: str, base_val):
         xs, ys = [0.0], [base_val]
         for d in doses:
-            r = dmg.get(f"{q}_zero@{d:g}")
+            r = dmg.get(f"{q}_zero" if d == 1.0 else f"{q}_zero@{d:g}")
             if r is not None and field in r:
                 xs.append(d * 100)
                 ys.append(r[field])
@@ -210,22 +210,20 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
                         fontsize=9, fontweight="bold", color=col)
         ax.set_ylabel(ylabel)
         ax.set_xlabel("Share of quadrant's firings zeroed (%)")
-        ax.set_xticks([0, 5, 10, 25, 50])
-        ax.set_xlim(-2, 57)
+        ax.set_xticks([0, 10, 25, 50, 100])
+        ax.set_xlim(-3, 112)
         if is_rate:
             ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
     if "mmlu_direct_rate" in base:
-        axes[2].set_ylim(0.45, 0.85)
-    axes[1].set_ylim(0.35, 0.65)
+        axes[2].set_ylim(0.38, 0.85)
+    axes[1].set_ylim(0.2, 0.65)
+    axes[1].axhline(0.25, color=INK2, lw=0.9, ls=":")
+    axes[1].annotate("chance", (0, 0.25), xytext=(2, 4), textcoords="offset points", fontsize=8.5, color=INK2)
     handles, labels = axes[0].get_legend_handles_labels()
     from matplotlib.lines import Line2D
     handles.append(Line2D([], [], color=INTACT_COL, ls="--", lw=1.2))
     labels.append("intact model (± SE band)")
     fig.legend(handles, labels, loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0.055))
-    full = [f"{q.upper()} {dmg[f'{q}_zero']['loss_increase_pct']:+.0f}%" for q in ("q3", "q4") if f"{q}_zero" in dmg]
-    if full:
-        add_footer(fig, "Not shown: zeroing 100% of the quadrant (WikiText loss " + ", ".join(full) +
-                   "; breaks the model, MMLU at chance), left out so the 0-50% range stays readable.")
     save(fig, out_dir, name)
 
 
