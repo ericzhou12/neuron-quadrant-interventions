@@ -6,8 +6,8 @@ and up. Its output is act_fn(gate) * up. The signs of gate and up put the
 firing in one of four quadrants (Q1..Q4).
 
 Panel a: a random sample of firings, one dot each, coloured by quadrant.
-Panel b: the output each point of the plane produces, on a scale that keeps
-         the small leaks visible.
+Panel b: the same sampled firings, dot area proportional to |output|,
+         colour by the sign of the output.
 Panel c: each quadrant's share of firings and of total |activation|.
 
 The text is the intact model's own GSM8K reasoning (prompt + thinking block of
@@ -130,7 +130,7 @@ CORNER = {"q1": (VIEW - PAD, VIEW - PAD, "right", "top"), "q2": (VIEW - PAD, -VI
 NOTE = {"q1": "gate open, large +", "q2": "gate open, large −", "q3": "gate closed, small + leak",
         "q4": "gate closed, small − leak"}
 
-fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(16.2, 5.9), gridspec_kw={"width_ratios": [1, 1, 0.78]})
+fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(16.2, 6.3), gridspec_kw={"width_ratios": [1, 1, 0.78]})
 
 cols = {"q1": "#3a2f8f", "q2": "#8f8ab8", "q3": style.Q3_COL, "q4": style.Q4_COL}
 sg, su = d["sample_g"], d["sample_u"]
@@ -146,20 +146,29 @@ for k, q in enumerate(QUADS):
             fontweight="bold", linespacing=1.35, zorder=4,
             bbox=dict(boxstyle="round,pad=0.3", fc=style.SURFACE, ec="none", alpha=0.9))
 
-axis = np.linspace(-VIEW, VIEW, 801)
-G, U = np.meshgrid(axis, axis)
 assert "SiLU" in str(d["act_name"])
-out = G / (1 + np.exp(-G)) * U  # SiLU(gate) * up
-im2 = a2.imshow(out, origin="lower", extent=(-VIEW, VIEW, -VIEW, VIEW), cmap=diverge,
-                norm=SymLogNorm(linthresh=0.5, vmin=-100, vmax=100), aspect="equal")
-cb2 = fig.colorbar(im2, ax=a2, fraction=0.046, pad=0.03, ticks=[-100, -10, -1, -0.3, 0, 0.3, 1, 10, 100])
-cb2.ax.set_yticklabels(["−100", "−10", "−1", "−0.3", "0", "+0.3", "+1", "+10", "+100"])
-cb2.set_label("neuron output = SiLU(gate) × up"); cb2.outline.set_visible(False)
-a2.set_title("b  What each firing outputs")
+so = sg / (1 + np.exp(-sg)) * su  # each sampled firing's output, SiLU(gate) * up
+SIZE_PER_UNIT, SIZE_MIN, OUT_CAP = 8.0, 0.5, 12.0  # dot AREA is proportional to |output|, capped at OUT_CAP
+
+
+def dot_size(v):
+    return SIZE_MIN + SIZE_PER_UNIT * np.minimum(np.abs(v), OUT_CAP)
+
+
+big_first = np.argsort(-np.abs(so))  # draw large dots first so the small leaks stay visible on top
+a2.scatter(sg[big_first], su[big_first], s=dot_size(so[big_first]),
+           c=np.where(so[big_first] > 0, style.Q3_COL, style.Q4_COL), alpha=0.45, linewidths=0, zorder=2, rasterized=True)
+a2.set_aspect("equal")
+a2.set_title("b  The same firings, sized by output")
 for q in QUADS:
     x, y, ha, va = CORNER[q]
-    a2.text(x, y, f"{q.upper()}\n{NOTE[q]}", ha=ha, va=va, fontsize=9.6, color=style.INK, linespacing=1.35,
-            bbox=dict(boxstyle="round,pad=0.3", fc=style.SURFACE, ec="none", alpha=0.85))
+    a2.text(x, y, f"{q.upper()}\n{NOTE[q]}", ha=ha, va=va, fontsize=9.6, color=style.INK, linespacing=1.35, zorder=4,
+            bbox=dict(boxstyle="round,pad=0.3", fc=style.SURFACE, ec="none", alpha=0.9))
+handles = [plt.scatter([], [], s=dot_size(v), color=style.INK2, alpha=0.6, linewidths=0, label=f"{v:g}") for v in (0.15, 1.5, 10)]
+handles += [plt.scatter([], [], s=40, color=c, linewidths=0, label=l)
+            for c, l in ((style.Q3_COL, "positive output"), (style.Q4_COL, "negative output"))]
+a2.legend(handles=handles, title="|output| = |SiLU(gate) × up|", loc="upper center", bbox_to_anchor=(0.5, -0.12),
+          ncol=5, columnspacing=1.3, handletextpad=0.4, title_fontsize=9)
 for ax in (a1, a2):
     ax.axhline(0, color=style.INK, lw=0.9); ax.axvline(0, color=style.INK, lw=0.9)
     ax.set_xlim(-VIEW, VIEW); ax.set_ylim(-VIEW, VIEW); ax.grid(False)
@@ -182,7 +191,7 @@ fig.suptitle(f"{args.model.split('/')[-1]}: every MLP neuron on every token of t
              f"({int(d['n_traces'])} problems, {int(d['n_tokens']):,} thinking tokens, all {counts.shape[0]} layers, "
              f"{total / 1e9:.1f} billion firings). Activation share uses |output|.",
              fontsize=9.5, color=style.INK2, x=0.012, ha="left", y=0.985)
-fig.tight_layout(rect=(0, 0, 1, 0.955), w_pad=2.5)
+fig.tight_layout(rect=(0, 0.07, 1, 0.955), w_pad=2.5)
 out_path = folder / "figures" / "fig9_quadrant_map.png"
 fig.savefig(out_path, dpi=160)
 print("wrote", out_path)
