@@ -169,8 +169,8 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
     fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.7), sharex=True)
     fig.subplots_adjust(left=0.08, right=0.95, top=0.78, bottom=0.27, wspace=0.3)
     add_header(fig, "Removing Q3 or Q4 firings does matched damage",
-               "Qwen3-1.7B, thinking off. x = share of the quadrant's firings set to zero, chosen at random.\n"
-               "Loss on WikiText; MMLU n = %d questions, one seed; bands = ±1 binomial standard error." % n)
+               "Qwen3-1.7B, thinking off\n"
+               "Loss on WikiText; MMLU n = %d questions; bands = ±1 binomial standard error." % n)
 
     panels = [
         ("loss_increase_pct", 0.0, "a  General damage: WikiText loss", "Loss increase vs intact (%)", False),
