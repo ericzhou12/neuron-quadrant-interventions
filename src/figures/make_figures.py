@@ -503,7 +503,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
                   ("wait", 'b  Urge to say "Wait"', "ratio to intact (log scale)")]
     else:
         panels = [("end_either", "a  Urge to end", "Ratio to intact, log scale"),
-                  ("continue_any", "b  Urge to keep going", "")]
+                  ("continue_any", "b  Urge to continue thinking", "")]
 
     # One row per set of traces: the main set on top, the second set underneath.
     sets = [(main, n_main, "first set of traces")] + ([(rep, n_rep, "second set of traces")] if n_rep else [])
@@ -511,9 +511,8 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
                              sharex=True, sharey="col", squeeze=False)
     fig.subplots_adjust(left=0.1, right=0.95, top=1 - 1.25 / (1.3 + 4.3 * len(sets)),
                         bottom=0.95 / (1.3 + 4.3 * len(sets)), wspace=0.24, hspace=0.3)
-    add_header(fig, "Activation size as a dial: bigger Q3 activations raise the urge to end and lower the urge to keep going",
-               "Qwen3-1.7B replaying the intact model's own reasoning. Every firing in the quadrant is multiplied "
-               "by the activation size.\nLines = mean ratio to intact, shaded = 95% interval.")
+    add_header(fig, "Bigger Q3 activations raise the urge to end and lower the urge to continue thinking",
+               "Lines = mean ratio to intact, shaded = 95% interval.")
     letters = iter("abcdefgh")
     for row, (data, n_set, set_name) in zip(grid, sets):
         for ax, (metric, title, ylabel) in zip(row, panels):
