@@ -5,7 +5,7 @@ Every MLP neuron on every token is one firing with two pre-activations: gate
 and up. Its output is act_fn(gate) * up. The signs of gate and up put the
 firing in one of four quadrants (Q1..Q4).
 
-Panel a: where the firings are (2-D histogram over all layers and neurons).
+Panel a: a random sample of firings, one dot each, coloured by quadrant.
 Panel b: the output each point of the plane produces, on a scale that keeps
          the small leaks visible.
 Panel c: each quadrant's share of firings and of total |activation|.
@@ -34,13 +34,14 @@ p.add_argument("--model", default="Qwen/Qwen3-1.7B")
 p.add_argument("--n-traces", type=int, default=24)
 p.add_argument("--max-tokens", type=int, default=768)
 p.add_argument("--replot", action="store_true")
+p.add_argument("--dots-per-layer", type=int, default=40, help="random firings kept per layer per trace for the dot plot")
 args = p.parse_args()
 folder = Path(args.folder)
 cache = folder / "quadrant_map.npz"
 LIM, BINS = 6.0, 240  # histogram covers gate, up in [-LIM, LIM]
 QUADS = ["q1", "q2", "q3", "q4"]
 
-if not (args.replot and cache.exists()):
+if not (args.replot and cache.exists() and "sample_g" in np.load(cache).files):
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from neuron_sparsity import get_mlps, pick_device
@@ -57,6 +58,8 @@ if not (args.replot and cache.exists()):
     counts = torch.zeros(len(mlps), 4, dtype=torch.float64)   # firings per layer, quadrant
     mass = torch.zeros(len(mlps), 4, dtype=torch.float64)     # sum |activation|
     outside, stash, n_tokens = 0, {}, 0
+    sample_g, sample_u = [], []
+    gen = torch.Generator().manual_seed(0)
 
     def keep(name, i):
         return lambda _m, _inp, out: stash.__setitem__((i, name), out.detach())
@@ -81,6 +84,8 @@ if not (args.replot and cache.exists()):
                 for k, m in enumerate(((g > 0) & (u > 0), (g > 0) & (u < 0), (g < 0) & (u < 0), (g < 0) & (u > 0))):
                     counts[i, k] += m.sum().item()
                     mass[i, k] += a[m].sum().item()
+                pick = torch.randint(0, g.numel(), (args.dots_per_layer,), generator=gen).to(g.device)  # uniform over firings
+                sample_g.append(g.reshape(-1)[pick].cpu()); sample_u.append(u.reshape(-1)[pick].cpu())
                 inside = (g.abs() < LIM) & (u.abs() < LIM)
                 outside += (~inside).sum().item()
                 gi = ((g[inside] + LIM) / (2 * LIM) * BINS).long().clamp_(0, BINS - 1)
@@ -94,7 +99,7 @@ if not (args.replot and cache.exists()):
     grid = torch.linspace(-LIM, LIM, 481)
     act = mlps[0].act_fn(grid).numpy()
     np.savez_compressed(cache, hist=hist.view(BINS, BINS).numpy(), counts=counts.numpy(), mass=mass.numpy(),
-                        outside=outside, n_tokens=n_tokens, grid=grid.numpy(), act=act,
+                        outside=outside, n_tokens=n_tokens, sample_g=torch.cat(sample_g).numpy(), sample_u=torch.cat(sample_u).numpy(), grid=grid.numpy(), act=act,
                         act_name=type(mlps[0].act_fn).__name__, n_traces=len(problems))
     del model
 
@@ -126,17 +131,19 @@ NOTE = {"q1": "gate open, large +", "q2": "gate open, large −", "q3": "gate cl
 
 fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(16.2, 5.9), gridspec_kw={"width_ratios": [1, 1, 0.78]})
 
-frac = hist / total
-im = a1.imshow(np.where(frac > 0, frac, np.nan), origin="lower", extent=(-LIM, LIM, -LIM, LIM), cmap=density,
-               norm=LogNorm(vmin=frac[frac > 0].max() / 3000, vmax=frac.max()), interpolation="nearest", aspect="equal")
-cb = fig.colorbar(im, ax=a1, fraction=0.046, pad=0.03)
-cb.set_label("share of all firings per cell (log scale)"); cb.outline.set_visible(False)
-a1.set_title("a  Where firings land")
+cols = {"q1": "#3a2f8f", "q2": "#8f8ab8", "q3": style.Q3_COL, "q4": style.Q4_COL}
+sg, su = d["sample_g"], d["sample_u"]
+quad_of = np.where(sg > 0, np.where(su > 0, 0, 1), np.where(su < 0, 2, 3))
+order = np.random.default_rng(0).permutation(len(sg))  # so no quadrant is drawn on top of another
+a1.scatter(sg[order], su[order], s=5, c=[cols[QUADS[k]] for k in quad_of[order]], alpha=0.55, linewidths=0, zorder=2,
+           rasterized=True)
+a1.set_aspect("equal")
+a1.set_title(f"a  {len(sg):,} randomly sampled firings")
 for k, q in enumerate(QUADS):
     x, y, ha, va = CORNER[q]
-    a1.text(x, y, f"{q.upper()}\n{share_f[k]:.0%} of firings", ha=ha, va=va, fontsize=10.5, color=style.INK,
-            fontweight="bold", linespacing=1.35,
-            bbox=dict(boxstyle="round,pad=0.3", fc=style.SURFACE, ec="none", alpha=0.85))
+    a1.text(x, y, f"{q.upper()}\n{share_f[k]:.0%} of firings", ha=ha, va=va, fontsize=10.5, color=cols[q],
+            fontweight="bold", linespacing=1.35, zorder=4,
+            bbox=dict(boxstyle="round,pad=0.3", fc=style.SURFACE, ec="none", alpha=0.9))
 
 G, U = np.meshgrid(d["grid"], d["grid"])
 out = np.interp(G, d["grid"], d["act"]) * U
@@ -156,7 +163,6 @@ for ax in (a1, a2):
     ax.set_xlabel("gate pre-activation"); ax.set_ylabel("up pre-activation")
     ax.set_xticks(range(-4, 5, 2)); ax.set_yticks(range(-4, 5, 2))
 
-cols = {"q1": "#3a2f8f", "q2": "#8f8ab8", "q3": style.Q3_COL, "q4": style.Q4_COL}
 y = np.arange(4)[::-1]
 for k, q in enumerate(QUADS):
     a3.barh(y[k] + 0.19, share_f[k], height=0.34, color=cols[q])
