@@ -598,8 +598,8 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
     fig.subplots_adjust(left=0.22, right=0.985, top=1 - 1.25 / fig.get_figheight(),
                         bottom=0.65 / fig.get_figheight())
     add_header(fig, "Ablating a whole quadrant breaks the model",
-               "Qwen3-1.7B, GSM8K, thinking on, seed 1, first 50 problems (Q4 zero: first 25). One dot per problem; "
-               "filled = correct, hollow = wrong.\nDamage = WikiText loss increase vs intact (single evaluation).",
+               "Qwen3-1.7B, GSM8K, thinking on, seed 1, first 50 problems (Q4 zero: first 25).\n"
+               "Damage = WikiText loss increase vs intact (single evaluation).",
                top=0.985)
     rng = np.random.default_rng(0)
     y = np.arange(len(data))[::-1]
@@ -659,6 +659,11 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
     ax.tick_params(axis="y", length=0)
     for yi in y[:-1]:
         ax.axhline(yi - 0.5, color=GRID, lw=0.7)
+    key = [plt.Line2D([], [], marker="o", ls="", ms=5.2, mec=INK2, mew=1.1, mfc=mfc, label=lab)
+           for mfc, lab in ((INK2, "correct"), (style.SURFACE, "wrong"))]
+    fig.legend(handles=key, title="One dot per problem", loc="lower right", bbox_to_anchor=(0.985, 0.0),
+               ncol=2, frameon=False, fontsize=8.5, title_fontsize=8.5, handletextpad=0.1, columnspacing=1.0,
+               alignment="right")
     save(fig, out_dir, name)
 
 
