@@ -559,6 +559,8 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
 # ----------------------------------------------------------------------------- fig 6
 
 FIG6_ROWS = [("none", "none__seed1.jsonl", "Intact model"),
+             ("q3_qmean", "q3_qmean__seed1.jsonl", "Q3 flattened to typical Q3 value"),
+             ("q4_qmean", "q4_qmean__seed1.jsonl", "Q4 flattened to typical Q4 value"),
              ("q3_mean", "q3_mean__seed1.jsonl", "Q3 set to neuron mean"),
              ("q4_mean", "q4_mean__seed1.jsonl", "Q4 set to neuron mean"),
              ("q3_zero", "q3_zero__seed1.jsonl", "Q3 removed (zero)"),
