@@ -158,7 +158,7 @@ big_first = np.argsort(-np.abs(so))  # draw large dots first so the small leaks 
 a2.scatter(sg[big_first], su[big_first], s=dot_size(so[big_first]),
            c=np.where(so[big_first] > 0, style.Q3_COL, style.Q4_COL), alpha=0.45, linewidths=0, zorder=2, rasterized=True)
 a2.set_aspect("equal")
-a2.set_title("b  Same firings sized by output")
+a2.set_title("b  Firings sized by output")
 for q in QUADS:
     x, y, ha, va = CORNER[q]
     a2.text(x, y, f"{q.upper()}\n{NOTE[q]}", ha=ha, va=va, fontsize=9.6, color=style.INK, linespacing=1.35, zorder=4,
