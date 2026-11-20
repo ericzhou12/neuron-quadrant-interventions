@@ -168,7 +168,7 @@ def fig1_damage_dose(folder: Path, out_dir: Path):
 
     fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.7), sharex=True)
     fig.subplots_adjust(left=0.08, right=0.95, top=0.78, bottom=0.27, wspace=0.3)
-    add_header(fig, "Removing Q3 or Q4 firings does matched damage",
+    add_header(fig, "Damage from removing a share of Q3 or Q4 firings",
                "Qwen3-1.7B, thinking off\n"
                "Loss on WikiText; MMLU n = %d questions; bands = ±1 binomial standard error." % n)
 
@@ -240,7 +240,7 @@ def fig2_putback_ladder(folder: Path, out_dir: Path):
                              squeeze=False)
     axes = axes[0]
     fig.subplots_adjust(left=0.06, right=0.985, top=0.79, bottom=0.25, wspace=0.12)
-    add_header(fig, "Damage grows as each edit throws away more of the activation's structure, alike for Q3 and Q4",
+    add_header(fig, "Damage from each edit to Q3 or Q4 activations",
                "Qwen3-1.7B. Bars = WikiText loss increase vs intact model (log scale); edits ordered left to right "
                "from least to most structure destroyed. Single evaluation, no error bars.")
     bw = 0.38
@@ -403,7 +403,7 @@ def fig4_probe(folder: Path, out_dir: Path):
 
     fig = plt.figure(figsize=(13, 5.4 + 0.12 * len(conds)))
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 0.85], wspace=0.32, left=0.06, right=0.985, top=0.8, bottom=0.12)
-    add_header(fig, "Teacher-forced probe: does an edit raise the urge to stop thinking more than its matched control?",
+    add_header(fig, "Teacher-forced probe: urge to stop thinking under each edit and its matched control",
                f"Qwen3-1.7B reading the intact model's own reasoning traces ({n_txt} traces, paired by trace). "
                "Error bars = 95% bootstrap CI over traces. Points to the right did more damage.\nSuperseded in part: "
                "</think> and \"Wait\" turned out to be narrow targets. See fig5 for the urge to end by either "
@@ -511,7 +511,7 @@ def fig5_probe_conclude(folder: Path, out_dir: Path):
                              sharex=True, sharey="col", squeeze=False)
     fig.subplots_adjust(left=0.1, right=0.95, top=1 - 1.25 / (1.3 + 4.3 * len(sets)),
                         bottom=0.95 / (1.3 + 4.3 * len(sets)), wspace=0.24, hspace=0.3)
-    add_header(fig, "Bigger Q3 activations raise the urge to end and lower the urge to continue thinking",
+    add_header(fig, "Teacher-forced probe: urge to end and urge to continue thinking, by activation size",
                "Lines = mean ratio to intact, shaded = 95% interval.")
     letters = iter("abcdefgh")
     for row, (data, n_set, set_name) in zip(grid, sets):
@@ -597,7 +597,7 @@ def fig6_full_ablation(folder: Path, out_dir: Path):
     fig, ax = plt.subplots(figsize=(12, 1.15 * len(data) + 2.4))
     fig.subplots_adjust(left=0.22, right=0.985, top=1 - 1.25 / fig.get_figheight(),
                         bottom=0.65 / fig.get_figheight())
-    add_header(fig, "Ablating a whole quadrant breaks the model",
+    add_header(fig, "CoT length per problem with a whole quadrant ablated",
                "Qwen3-1.7B, GSM8K, thinking on, seed 1, first 50 problems (Q4 zero: first 25).\n"
                "Damage = WikiText loss increase vs intact (single evaluation).",
                top=0.985)

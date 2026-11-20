@@ -97,9 +97,9 @@ a1.annotate("intact", (len(EDITS) - 0.4, 1), xytext=(-4, 5), textcoords="offset 
             ha="right", color=style.MUTED, fontsize=9.5)
 a1.set_ylim(0.9, 1.6)
 a1.set_ylabel("thinking length vs intact (median ratio)")
-a1.set_title("a  Partial ablation makes reasoning longer")
+a1.set_title("a  CoT length under partial ablation")
 a2.set_ylim(0.6, 1.0); a2.set_ylabel("GSM8K accuracy")
-a2.set_title("b  Accuracy decreases slightly")
+a2.set_title("b  GSM8K accuracy under partial ablation")
 handles = [plt.Line2D([], [], marker="o", ls="", color=c, ms=8, label=l)
            for c, l in ((style.INTACT_COL, "intact"), (style.Q3_COL, "Q3 activations"), (style.Q4_COL, "Q4 activations (control)"))]
 a2.legend(handles=handles, loc="lower left", ncol=3, handletextpad=0.2, columnspacing=1.2)
